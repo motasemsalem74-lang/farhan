@@ -24,7 +24,7 @@ import { useAuthState } from 'react-firebase-hooks/auth'
 import { toast } from 'sonner'
 
 import { db, auth } from '@/firebase/firebase-config.template'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'

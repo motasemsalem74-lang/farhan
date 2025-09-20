@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#1e40af" />
+    <meta name="description" content="نظام محاسبي متكامل لمؤسسة أبو فرحان للنقل الخفيف" />
+    <meta name="keywords" content="أبو فرحان، نظام محاسبي، إدارة مخزون، موتوسيكلات، تروسيكلات" />
+    <meta name="author" content="Al Farhan Transport Systems" />
+    
+    <!-- Apple PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="أبو فرحان" />
+    <link rel="apple-touch-icon" href="/logo-apple-touch.png" />
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Microsoft PWA Meta Tags -->
+    <meta name="msapplication-TileColor" content="#1e40af" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+    
+    <!-- Load critical fonts -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Cairo:wght@200;300;400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@200;300;400;500;600;700;800&display=swap" /></noscript>
+    
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@200;300;400;500;700;800;900&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@200;300;400;500;700;800;900&display=swap" /></noscript>
+    
+    <!-- Security headers -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
+    
+    <!-- Referrer policy -->
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    
+    <title>نظام أبو فرحان للنقل الخفيف</title>
+    
+    <style>
+      /* Critical CSS for faster loading */
+      html {
+        direction: rtl;
+        text-align: right;
+      }
+      
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Cairo', 'Tajawal', system-ui, sans-serif;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 50%, #1e40af 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      .loading-screen {
+        text-align: center;
+        color: white;
+        padding: 2rem;
+      }
+      
+      .loading-logo {
+        width: 120px;
+        height: 120px;
+        margin: 0 auto 2rem;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+      
+      .loading-text {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        opacity: 0.9;
+      }
+      
+      .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-top: 3px solid white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      
+      .loading-pattern {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.1) 1px, transparent 0);
+        background-size: 30px 30px;
+        pointer-events: none;
+        z-index: -1;
+      }
+      
+      #root {
+        width: 100vw;
+        height: 100vh;
+      }
+      
+      /* Hide loading screen once app loads */
+      .app-loaded .loading-screen {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="loading-pattern"></div>
+    <div id="root">
+      <!-- Loading screen shown while React app loads -->
+      <div class="loading-screen">
+        <div class="loading-logo">
+          <img src="/logo.png" alt="أبو فرحان" style="width: 80px; height: 80px; object-fit: contain;" />
+        </div>
+        <div class="loading-text">نظام أبو فرحان للنقل الخفيف</div>
+        <div class="loading-text" style="font-size: 1rem; font-weight: 400; opacity: 0.7;">
+          جاري تحميل التطبيق...
+        </div>
+        <div class="loading-spinner"></div>
+      </div>
+    </div>
+    
+    <!-- PWA and Offline Support -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Service Worker Registration -->
+    <script>
+      // تسجيل Service Worker للـ PWA
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', async () => {
+          try {
+            // سيتم تسجيل Service Worker من خلال PWA Manager
+            console.log('🚀 PWA: Ready to register service worker');
+          } catch (error) {
+            console.error('❌ PWA: Service worker registration failed', error);
+          }
+        });
+      }
+      
+      // معالجة prompt التثبيت
+      let deferredPrompt;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        // إشارة للتطبيق أن التثبيت متاح
+        window.dispatchEvent(new CustomEvent('pwa-install-available', { detail: e }));
+        console.log('📱 PWA: Install prompt available');
+      });
+      
+      // معالجة تثبيت التطبيق
+      window.addEventListener('appinstalled', () => {
+        console.log('✅ PWA: App installed successfully');
+        deferredPrompt = null;
+        window.dispatchEvent(new CustomEvent('pwa-installed'));
+      });
+      
+      // معالجة تغييرات حالة الاتصال
+      window.addEventListener('online', () => {
+        console.log('🌐 Network: Back online');
+        window.dispatchEvent(new CustomEvent('network-status-changed', { detail: { online: true } }));
+      });
+      
+      window.addEventListener('offline', () => {
+        console.log('📡 Network: Gone offline');
+        window.dispatchEvent(new CustomEvent('network-status-changed', { detail: { online: false } }));
+      });
+      
+      // إعداد أولي للـ PWA
+      window.PWA_CONFIG = {
+        name: 'نظام أبو فرحان للنقل الخفيف',
+        shortName: 'أبو فرحان',
+        version: '1.0.0',
+        cacheVersion: 'al-farhan-v1.0.0'
+      };
+    </script>
+    
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /
+Allow: /$
+
+# This is a private business application
+# No web crawling or indexing allowed
+# Only the main page is accessible for verification purposes

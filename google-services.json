@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "871976480343",
+    "project_id": "al-farhan-c3a30",
+    "storage_bucket": "al-farhan-c3a30.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:871976480343:android:baea3ef580b28a3589fd12",
+        "android_client_info": {
+          "package_name": "com.alfarhan.transport"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBuuM3rbUFdu2MSTEg-w7pB-9l_Q1SOj5M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,132 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users collection
+    match /users/{userId} {
+      allow read, write: if request.auth != null && 
+        (request.auth.uid == userId || isAdmin() || isSuperAdmin());
+    }
+    
+    // Warehouses collection
+    match /warehouses/{warehouseId} {
+      allow read: if request.auth != null && canAccessWarehouse(warehouseId);
+      allow write: if request.auth != null && (isAdmin() || isSuperAdmin());
+    }
+    
+    // Inventory items collection
+    match /inventory_items/{itemId} {
+      allow read: if request.auth != null && canAccessItem(resource.data.currentWarehouseId);
+      allow write: if request.auth != null && (isAdmin() || isSuperAdmin() || canManageWarehouse(resource.data.currentWarehouseId));
+    }
+    
+    // Transactions collection
+    match /transactions/{transactionId} {
+      allow read: if request.auth != null && canAccessTransaction();
+      allow create: if request.auth != null && isValidTransaction();
+      allow update: if request.auth != null && (isAdmin() || isSuperAdmin());
+    }
+    
+    // Agents collection
+    match /agents/{agentId} {
+      allow read: if request.auth != null && (
+        isAdmin() || 
+        isSuperAdmin() || 
+        (isAgent() && getUserData().warehouseId == resource.data.warehouseId)
+      );
+      allow write: if request.auth != null && (isAdmin() || isSuperAdmin());
+    }
+    
+    // Document tracking collection
+    match /document_tracking/{docId} {
+      allow read: if request.auth != null;
+      allow update: if request.auth != null && (isAdmin() || isSuperAdmin());
+      allow create: if request.auth != null;
+    }
+    
+    // Notifications collection
+    match /notifications/{notificationId} {
+      allow read, write: if request.auth != null && 
+        request.auth.uid == resource.data.recipientId;
+    }
+    
+    // System configuration (read-only for most users)
+    match /system_config/main {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && isSuperAdmin();
+    }
+    
+    // Notification configurations
+    match /notification_configs/{userId} {
+      allow read, write: if request.auth != null && 
+        (request.auth.uid == userId || isAdmin() || isSuperAdmin());
+    }
+    
+    // Helper functions
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    function getUserRole() {
+      return getUserData().role;
+    }
+    
+    function isSuperAdmin() {
+      return getUserRole() == 'super_admin';
+    }
+    
+    function isAdmin() {
+      return getUserRole() == 'admin';
+    }
+    
+    function isAgent() {
+      return getUserRole() == 'agent';
+    }
+    
+    function isShowroomUser() {
+      return getUserRole() == 'showroom_user';
+    }
+    
+    function canAccessWarehouse(warehouseId) {
+      let userData = getUserData();
+      return isSuperAdmin() || 
+             isAdmin() || 
+             (isAgent() && userData.warehouseId == warehouseId) ||
+             (isShowroomUser() && getWarehouseType(warehouseId) == 'showroom');
+    }
+    
+    function canManageWarehouse(warehouseId) {
+      let userData = getUserData();
+      return isSuperAdmin() || 
+             isAdmin() || 
+             (isAgent() && userData.warehouseId == warehouseId) ||
+             (isShowroomUser() && getWarehouseType(warehouseId) == 'showroom');
+    }
+    
+    function getWarehouseType(warehouseId) {
+      return get(/databases/$(database)/documents/warehouses/$(warehouseId)).data.type;
+    }
+    
+    function canAccessItem(warehouseId) {
+      return canAccessWarehouse(warehouseId);
+    }
+    
+    function canAccessTransaction() {
+      // Basic transaction access - can be refined based on specific business rules
+      return isSuperAdmin() || isAdmin() || isAgent() || isShowroomUser();
+    }
+    
+    function isValidTransaction() {
+      // Validate transaction data structure and permissions
+      let userData = getUserData();
+      return request.resource.data.userId == request.auth.uid &&
+             (isSuperAdmin() || isAdmin() || 
+              (isAgent() && canManageWarehouse(request.resource.data.fromWarehouseId)) ||
+              (isShowroomUser() && getWarehouseType(request.resource.data.fromWarehouseId) == 'showroom'));
+    }
+    
+    // Prevent unauthorized access to any other documents
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

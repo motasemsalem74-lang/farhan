@@ -34,10 +34,11 @@ const CACHE_STRATEGIES = {
   IMAGES: 'cache-first-update'
 }
 
-declare const self: ServiceWorkerGlobalScope
+// Service Worker Type Definitions (simplified)
+declare const self: any
 
 // تثبيت Service Worker
-self.addEventListener('install', (event: ExtendableEvent) => {
+self.addEventListener('install', (event: any) => {
   console.log('🔧 Service Worker: Installing...')
   
   event.waitUntil(
@@ -58,7 +59,7 @@ self.addEventListener('install', (event: ExtendableEvent) => {
 })
 
 // تفعيل Service Worker
-self.addEventListener('activate', (event: ExtendableEvent) => {
+self.addEventListener('activate', (event: any) => {
   console.log('🚀 Service Worker: Activating...')
   
   event.waitUntil(
@@ -83,7 +84,7 @@ self.addEventListener('activate', (event: ExtendableEvent) => {
 })
 
 // معالجة الطلبات
-self.addEventListener('fetch', (event: FetchEvent) => {
+self.addEventListener('fetch', (event: any) => {
   const { request } = event
   const url = new URL(request.url)
 
@@ -257,7 +258,7 @@ function isImageRequest(url: URL): boolean {
 }
 
 // معالجة الرسائل من الصفحة الرئيسية
-self.addEventListener('message', (event: ExtendableMessageEvent) => {
+self.addEventListener('message', (event: any) => {
   if (event.data && event.data.type) {
     switch (event.data.type) {
       case 'SKIP_WAITING':

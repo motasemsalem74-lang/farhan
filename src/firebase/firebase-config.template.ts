@@ -4,15 +4,15 @@ import { Firestore, getFirestore } from 'firebase/firestore';
 import { FirebaseStorage, getStorage } from 'firebase/storage';
 import { getMessaging, Messaging, isSupported } from 'firebase/messaging';
 
-// Firebase configuration from google-services.json
+// Firebase configuration from environment variables or fallback to defaults
 const firebaseConfig = {
-  apiKey: "AIzaSyBuuM3rbUFdu2MSTEg-w7pB-9l_Q1SOj5M",
-  authDomain: "al-farhan-c3a30.firebaseapp.com",
-  projectId: "al-farhan-c3a30",
-  storageBucket: "al-farhan-c3a30.firebasestorage.app",
-  messagingSenderId: "871976480343",
-  appId: "1:871976480343:web:baea3ef580b28a3589fd12",
-  measurementId: "G-XXXXXXXXXX"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyBuuM3rbUFdu2MSTEg-w7pB-9l_Q1SOj5M",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "al-farhan-c3a30.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "al-farhan-c3a30",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "al-farhan-c3a30.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "871976480343",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:871976480343:web:baea3ef580b28a3589fd12",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-XXXXXXXXXX"
 };
 
 // Initialize Firebase

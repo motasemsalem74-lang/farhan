@@ -25,17 +25,18 @@ import { toast } from 'sonner'
 
 import { db, auth } from '@/firebase/firebase-config.template'
 import { Button } from '@/components/ui/Button'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/Badge'
+import { Input } from '@/components/ui/Input'
+import { Label } from '@/components/ui/Label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { CompositeImageDisplay } from '@/components/ui/CompositeImageDisplay'
 import { useUserData } from '@/hooks/useUserData'
 import { formatDate, isAdmin, isSuperAdmin } from '@/lib/utils'
 import { cn } from '@/lib/utils'
+import { DocumentTracking } from '@/types'
 
 interface DocumentStatusHistory {
   id: string
@@ -111,13 +112,20 @@ export function DocumentDetailsPage() {
         stages: docSnap.data().stages || []
       } as DocumentTracking
       
-      // إذا لم يكن اسم الوكيل موجوداً، حمله من مجموعة الوكلاء
-      if (documentData.agentId && !documentData.agentName) {
+      // Load agent name from sale transaction if needed
+      if (documentData.saleTransactionId) {
         try {
-          const agentRef = doc(db, 'agents', documentData.agentId)
-          const agentSnap = await getDoc(agentRef)
-          if (agentSnap.exists()) {
-            documentData.agentName = agentSnap.data().name
+          const saleRef = doc(db, 'transactions', documentData.saleTransactionId)
+          const saleSnap = await getDoc(saleRef)
+          if (saleSnap.exists()) {
+            const saleData = saleSnap.data()
+            if (saleData.agentId) {
+              const agentRef = doc(db, 'agents', saleData.agentId)
+              const agentSnap = await getDoc(agentRef)
+              if (agentSnap.exists()) {
+                (documentData as any).agentName = agentSnap.data().name
+              }
+            }
           }
         } catch (error) {
           console.error('Error loading agent name:', error)
@@ -391,7 +399,7 @@ export function DocumentDetailsPage() {
                   متأخرة بـ {Math.abs(daysUntilDue)} يوم
                 </div>
               )}
-              {!isOverdue && document.status !== 'completed' && document.status !== 'cancelled' && (
+              {!isOverdue && document.status !== 'completed' && (
                 <div className="px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
                   {daysUntilDue > 0 ? `باقي ${daysUntilDue} يوم` : 'مستحقة اليوم'}
                 </div>
@@ -568,7 +576,7 @@ export function DocumentDetailsPage() {
                 motorFingerprintImage={(document as any).motorFingerprintImageUrl}
                 chassisNumberImage={(document as any).chassisNumberImageUrl}
                 customerName={document.customerName || 'عميل'}
-                saleDate={document.createdAt?.toDate ? document.createdAt.toDate() : new Date(document.createdAt)}
+                saleDate={document.createdAt instanceof Date ? document.createdAt : document.createdAt.toDate()}
                 showRegenerateButton={false}
               />
             </div>

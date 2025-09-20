@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Bell, BellRing, Check, Archive, Trash2, Settings } from 'lucide-react'
-import { Button } from '../ui/button'
-import { Badge } from '../ui/badge'
+import { Button } from '../ui/Button'
+import { Badge } from '../ui/Badge'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu'
 import { ScrollArea } from '../ui/scroll-area'
-import { formatTimeAgo } from '../../lib/utils'
+import { formatTimeAgo } from '@/lib/utils'
 import { notificationService } from '../../lib/notificationService'
 import { Notification } from '../../types/notifications'
 import { useAuth } from '../../hooks/useAuth'

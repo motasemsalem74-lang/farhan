@@ -90,8 +90,10 @@ export default defineConfig({
     }
   },
   build: {
-    target: 'esnext',
-    minify: 'terser',
+    target: 'es2015',
+    minify: 'esbuild',
+    sourcemap: false,
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
         manualChunks: {
@@ -101,5 +103,8 @@ export default defineConfig({
         }
       }
     }
+  },
+  define: {
+    global: 'globalThis',
   }
 })

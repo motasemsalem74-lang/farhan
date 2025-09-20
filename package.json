@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:vercel": "npm run build",
     "preview": "vite preview",
     "lint": "eslint . --ext js,jsx,ts,tsx --report-unused-disable-directives --max-warnings 0",
     "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,css,md}\""
@@ -33,6 +34,7 @@
     "@radix-ui/react-label": "^2.0.2",
     "@radix-ui/react-switch": "^1.0.3",
     "@radix-ui/react-checkbox": "^1.0.4",
+    "@radix-ui/react-scroll-area": "^1.0.5",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "tailwind-merge": "^2.1.0",
@@ -67,6 +69,7 @@
     "postcss": "^8.4.32",
     "autoprefixer": "^10.4.16",
     "typescript": "^5.2.2",
+    "@types/serviceworker": "^0.0.95",
     "vite": "^5.0.8",
     "vite-plugin-pwa": "^0.17.4",
     "tailwindcss-animate": "^1.0.7"

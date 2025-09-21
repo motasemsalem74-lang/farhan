@@ -54,7 +54,7 @@ class PWAManager {
   private async registerServiceWorker(): Promise<void> {
     if ('serviceWorker' in navigator) {
       try {
-        this.swRegistration = await navigator.serviceWorker.register('/service-worker.js', {
+        this.swRegistration = await navigator.serviceWorker.register('/sw.js', {
           scope: '/'
         })
         
@@ -166,15 +166,14 @@ class PWAManager {
    * عرض بانر التثبيت
    */
   private showInstallBanner(): void {
-    // تم تعطيل رسالة تثبيت التطبيق
-    // toast.info('يمكن تثبيت التطبيق على جهازك', {
-    //   description: 'للحصول على تجربة أفضل وسرعة أكبر',
-    //   action: {
-    //     label: 'تثبيت',
-    //     onClick: () => this.installApp()
-    //   },
-    //   duration: 15000
-    // })
+    toast.info('يمكن تثبيت التطبيق على جهازك', {
+      description: 'للحصول على تجربة أفضل وسرعة أكبر',
+      action: {
+        label: 'تثبيت',
+        onClick: () => this.installApp()
+      },
+      duration: 15000
+    })
   }
 
   /**

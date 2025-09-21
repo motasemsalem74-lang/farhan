@@ -9,6 +9,12 @@ import './index.css'
 // Import Firebase initialization
 import './firebase/firebase-config.template'
 
+// Import and initialize PWA Manager
+import { pwaManager } from './lib/pwaManager'
+
+// Initialize PWA Manager
+pwaManager.init().catch(console.error)
+
 // Remove loading screen once React app loads
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {

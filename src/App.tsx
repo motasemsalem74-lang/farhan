@@ -29,6 +29,7 @@ import { UserManagementPage } from './pages/admin/UserManagementPage'
 // Hooks
 import { useUserData } from './hooks/useUserData'
 import { initializeWarehouses } from './utils/initializeWarehouses'
+import { useNotifications } from './hooks/useNotifications'
 
 // PWA Support
 import { offlineStorage } from './lib/offlineStorage'
@@ -37,6 +38,18 @@ import { pwaManager } from './lib/pwaManager'
 function App() {
   const [user, loading, error] = useAuthState(auth)
   const { userData, loadingUserData } = useUserData(user?.uid)
+  
+  // Initialize notifications system
+  const { notifications, unreadCount } = useNotifications()
+  
+  // Debug notifications
+  useEffect(() => {
+    if (notifications.length > 0) {
+      console.log('🔔 Notifications received:', notifications.length, 'unread:', unreadCount)
+      console.log('📋 Latest notifications:', notifications.slice(0, 3))
+    }
+  }, [notifications, unreadCount])
+  
   const [showSplash, setShowSplash] = useState(true)
   const [isOnline, setIsOnline] = useState(navigator.onLine)
   const [canInstall, setCanInstall] = useState(false)

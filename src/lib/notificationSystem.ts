@@ -85,6 +85,8 @@ class NotificationSystem {
    */
   async sendNotification(notification: Omit<Notification, 'id' | 'createdAt' | 'status'>): Promise<string> {
     try {
+      console.log('📤 Sending notification:', notification.title, 'to:', notification.recipientId)
+      
       const notificationData: Omit<Notification, 'id'> = {
         ...notification,
         status: NotificationStatus.UNREAD,
@@ -93,7 +95,7 @@ class NotificationSystem {
 
       const docRef = await addDoc(collection(db, 'notifications'), notificationData)
       
-      console.log('✅ Notification sent:', docRef.id)
+      console.log('✅ Notification sent successfully:', docRef.id, notificationData)
       return docRef.id
     } catch (error) {
       console.error('❌ Failed to send notification:', error)
@@ -494,4 +496,4 @@ export const notificationSystem = new NotificationSystem()
 
 // تصدير الكلاس والواجهات
 export { NotificationSystem }
-export type { Notification }
+export type { Notification as NotificationInterface }

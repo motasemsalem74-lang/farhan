@@ -95,7 +95,7 @@ export function UsersManagementPage() {
   
   // دالة للتحقق من صلاحيات المدير
   const isAdminOrHigher = () => {
-    return canManageUsers(userData?.role || '')
+    return userData?.role === 'super_admin' || userData?.role === 'admin'
   }
   const [users, setUsers] = useState<User[]>([])
   const [agents, setAgents] = useState<Agent[]>([])
@@ -117,21 +117,34 @@ export function UsersManagementPage() {
   })
 
   useEffect(() => {
+    console.log('🔐 Checking user permissions...')
+    console.log('👤 Current user data:', userData)
+    console.log('🎭 User role:', userData?.role)
+    console.log('✅ Is admin or higher:', isAdminOrHigher())
+    
     if (isAdminOrHigher()) {
+      console.log('🚀 User has permissions, loading data...')
       loadData()
+    } else {
+      console.log('❌ User does not have permissions')
     }
-  }, [isAdminOrHigher])
+  }, [userData, isAdminOrHigher])
 
   const loadData = async () => {
     try {
       setLoading(true)
+      console.log('🔄 Loading users data...')
       
       // تحميل المستخدمين
       const usersSnapshot = await getDocs(collection(db, 'users'))
+      console.log('📊 Users snapshot size:', usersSnapshot.size)
+      
       const usersData = usersSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as User[]
+      
+      console.log('👥 Users data loaded:', usersData.length, usersData)
       
       // تحميل الوكلاء
       const agentsSnapshot = await getDocs(collection(db, 'agents'))
@@ -150,8 +163,10 @@ export function UsersManagementPage() {
       setUsers(usersData)
       setAgents(agentsData)
       setWarehouses(warehousesData)
+      
+      console.log('✅ All data loaded successfully')
     } catch (error) {
-      console.error('Error loading data:', error)
+      console.error('❌ Error loading data:', error)
       toast.error('فشل في تحميل البيانات')
     } finally {
       setLoading(false)

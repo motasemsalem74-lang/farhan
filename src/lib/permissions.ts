@@ -8,7 +8,7 @@ export interface UserRole {
   description: string
 }
 
-// الأدوار الجديدة في النظام
+// الأدوار الجديدة في النظام - كما طلب المستخدم
 export const USER_ROLES: UserRole[] = [
   {
     id: 'super_admin',
@@ -37,17 +37,6 @@ export const USER_ROLES: UserRole[] = [
     permissions: [
       'sales.create_company_only',
       'inventory.view_company_only'
-    ]
-  },
-  {
-    id: 'agent',
-    name: 'agent',
-    displayName: 'وكيل',
-    description: 'وكيل - يدير مخزنه ومبيعاته فقط',
-    permissions: [
-      'sales.create_own',
-      'inventory.view_own',
-      'documents.view_own'
     ]
   }
 ]

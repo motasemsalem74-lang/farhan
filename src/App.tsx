@@ -17,6 +17,7 @@ import { DashboardLayout } from './components/layout/DashboardLayout'
 import { DashboardPage } from './pages/DashboardPage'
 import { InventoryPage } from './pages/inventory/InventoryPage'
 import { SalesPage } from './pages/sales/SalesPage'
+import { CompanySalesPage } from './pages/sales/CompanySalesPage'
 import { AgentsPage } from './pages/agents/AgentsPage'
 import { AgentMainPage } from './pages/agents/AgentMainPage'
 import { DocumentTrackingPage } from './pages/documents/DocumentTrackingPage'
@@ -311,6 +312,9 @@ function App() {
             
             {/* Sales Management */}
             <Route path="/sales/*" element={<SalesPage />} />
+            
+            {/* Company Sales (Sales Employee only) */}
+            <Route path="/sales/create" element={<CompanySalesPage />} />
             
             {/* Agent Management */}
             <Route path="/agents/*" element={<AgentsPage />} />

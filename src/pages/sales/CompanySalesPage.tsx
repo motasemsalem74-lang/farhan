@@ -1,0 +1,460 @@
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuthState } from 'react-firebase-hooks/auth'
+import { 
+  collection, 
+  query, 
+  where, 
+  getDocs, 
+  addDoc, 
+  updateDoc, 
+  doc, 
+  serverTimestamp 
+} from 'firebase/firestore'
+import { useForm } from 'react-hook-form'
+import { toast } from 'sonner'
+import { 
+  ShoppingCart, 
+  Package, 
+  Search, 
+  ArrowLeft,
+  User,
+  Phone,
+  MapPin,
+  Save
+} from 'lucide-react'
+
+import { db, auth } from '@/firebase/firebase-config.template'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { useUserData } from '@/hooks/useUserData'
+import { canOnlySellFromCompany, canViewProfits } from '@/lib/permissions'
+import { SimpleNotificationSystem } from '@/lib/simpleNotifications'
+import { generateTransactionId } from '@/lib/utils'
+import { InventoryItem, Warehouse } from '@/types'
+
+interface SaleFormData {
+  customerName: string
+  customerPhone: string
+  customerNationalId: string
+  customerAddress: string
+  notes: string
+}
+
+export function CompanySalesPage() {
+  const navigate = useNavigate()
+  const [user] = useAuthState(auth)
+  const { userData } = useUserData(user?.uid)
+  
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([])
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([])
+  const [selectedWarehouse, setSelectedWarehouse] = useState<string>('')
+  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+
+  const { register, handleSubmit, formState: { errors }, reset } = useForm<SaleFormData>()
+
+  // التحقق من الصلاحيات
+  const canSeeProfit = canViewProfits(userData?.role || '')
+  const isCompanyEmployee = canOnlySellFromCompany(userData?.role || '')
+
+  useEffect(() => {
+    if (userData) {
+      loadWarehouses()
+    }
+  }, [userData])
+
+  useEffect(() => {
+    if (selectedWarehouse) {
+      loadInventoryItems()
+    }
+  }, [selectedWarehouse])
+
+  const loadWarehouses = async () => {
+    try {
+      setLoading(true)
+      
+      // تحميل المخازن - موظف البيع يرى مخازن الشركة فقط
+      const warehousesQuery = query(
+        collection(db, 'warehouses'),
+        where('agentId', '==', null) // مخازن الشركة فقط
+      )
+      
+      const warehousesSnapshot = await getDocs(warehousesQuery)
+      const warehousesData = warehousesSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Warehouse[]
+      
+      setWarehouses(warehousesData)
+      
+      // اختيار أول مخزن تلقائياً
+      if (warehousesData.length > 0) {
+        setSelectedWarehouse(warehousesData[0].id)
+      }
+      
+    } catch (error) {
+      console.error('Error loading warehouses:', error)
+      toast.error('فشل في تحميل المخازن')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadInventoryItems = async () => {
+    if (!selectedWarehouse) return
+
+    try {
+      const itemsQuery = query(
+        collection(db, 'inventory_items'),
+        where('currentWarehouseId', '==', selectedWarehouse),
+        where('status', '==', 'available')
+      )
+      
+      const itemsSnapshot = await getDocs(itemsQuery)
+      const itemsData = itemsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as InventoryItem[]
+      
+      setInventoryItems(itemsData)
+    } catch (error) {
+      console.error('Error loading inventory items:', error)
+      toast.error('فشل في تحميل المخزون')
+    }
+  }
+
+  const filteredItems = inventoryItems.filter(item =>
+    item.motorFingerprint?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.chassisNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.model?.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  const onSubmit = async (data: SaleFormData) => {
+    if (!selectedItem || !userData) {
+      toast.error('يرجى اختيار منتج أولاً')
+      return
+    }
+
+    try {
+      setSubmitting(true)
+      
+      const transactionId = generateTransactionId('company_sale')
+      const invoiceNumber = `COMP-${Date.now()}`
+
+      // إنشاء معاملة البيع
+      const saleTransaction = {
+        transactionId,
+        invoiceNumber,
+        type: 'company_sale',
+        warehouseId: selectedWarehouse,
+        customerId: data.customerNationalId,
+        customerName: data.customerName,
+        customerPhone: data.customerPhone,
+        customerAddress: data.customerAddress,
+        items: [{
+          inventoryItemId: selectedItem.id,
+          motorFingerprint: selectedItem.motorFingerprint,
+          chassisNumber: selectedItem.chassisNumber,
+          brand: selectedItem.brand,
+          model: selectedItem.model,
+          salePrice: selectedItem.salePrice || selectedItem.purchasePrice,
+          // لا نحفظ سعر الشراء أو الربح للموظف
+        }],
+        totalAmount: selectedItem.salePrice || selectedItem.purchasePrice,
+        notes: data.notes,
+        createdAt: serverTimestamp(),
+        createdBy: userData.id,
+        soldBy: userData.id
+      }
+
+      const saleRef = await addDoc(collection(db, 'company_sales'), saleTransaction)
+
+      // تحديث حالة المنتج إلى مباع
+      await updateDoc(doc(db, 'inventory_items', selectedItem.id), {
+        status: 'sold',
+        soldAt: serverTimestamp(),
+        soldBy: userData.id,
+        saleTransactionId: saleRef.id,
+        salePrice: selectedItem.salePrice || selectedItem.purchasePrice
+      })
+
+      // إرسال إشعار للمدير
+      try {
+        await SimpleNotificationSystem.sendNotification({
+          recipientId: 'eJVyY9OwowchKEMlFLrk4MRiiaq2', // المدير الرئيسي
+          title: '🏢 بيعة شركة جديدة',
+          message: `موظف البيع ${userData.displayName || userData.email} أنشأ بيعة للعميل ${data.customerName} بقيمة ${(selectedItem.salePrice || selectedItem.purchasePrice).toLocaleString()} جنيه`,
+          type: 'company_sale',
+          actionUrl: `/sales/company/${saleRef.id}`,
+          senderId: userData.id,
+          senderName: userData.displayName || userData.email || 'موظف بيع',
+          priority: 'medium',
+          data: {
+            saleId: saleRef.id,
+            customerName: data.customerName,
+            totalAmount: selectedItem.salePrice || selectedItem.purchasePrice,
+            itemBrand: selectedItem.brand,
+            itemModel: selectedItem.model
+          }
+        })
+      } catch (notificationError) {
+        console.error('Failed to send notification:', notificationError)
+      }
+
+      toast.success('تم إنشاء فاتورة البيع بنجاح')
+      
+      // إعادة تعيين النموذج
+      reset()
+      setSelectedItem(null)
+      await loadInventoryItems()
+      
+    } catch (error) {
+      console.error('Error creating sale:', error)
+      toast.error('حدث خطأ أثناء إنشاء فاتورة البيع')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  if (!userData) {
+    return <LoadingSpinner text="جاري تحميل بيانات المستخدم..." />
+  }
+
+  if (!isCompanyEmployee && userData.role !== 'super_admin') {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Card className="max-w-md w-full">
+          <CardContent className="p-8 text-center">
+            <ShoppingCart className="h-12 w-12 mx-auto text-red-600 mb-4" />
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              غير مصرح بالوصول
+            </h2>
+            <p className="text-gray-600">
+              هذه الصفحة مخصصة لموظفي البيع فقط
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-6 py-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 arabic-text">مبيعات الشركة</h1>
+          <p className="text-gray-600 arabic-text">إنشاء فواتير بيع من مخازن الشركة</p>
+        </div>
+        <Button variant="outline" onClick={() => navigate('/dashboard')}>
+          <ArrowLeft className="ml-2 h-4 w-4" />
+          العودة للوحة التحكم
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* اختيار المخزن والمنتج */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              اختيار المنتج
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* اختيار المخزن */}
+            <div className="space-y-2">
+              <Label>المخزن</Label>
+              <select
+                value={selectedWarehouse}
+                onChange={(e) => setSelectedWarehouse(e.target.value)}
+                className="form-input w-full"
+              >
+                <option value="">اختر المخزن</option>
+                {warehouses.map(warehouse => (
+                  <option key={warehouse.id} value={warehouse.id}>
+                    {warehouse.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* البحث */}
+            {selectedWarehouse && (
+              <div className="space-y-2">
+                <Label>البحث في المنتجات</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="البحث بالبصمة أو الشاسيه أو الماركة..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* قائمة المنتجات */}
+            {selectedWarehouse && (
+              <div className="max-h-96 overflow-y-auto space-y-2">
+                {loading ? (
+                  <div className="text-center py-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
+                  </div>
+                ) : filteredItems.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    لا توجد منتجات متاحة
+                  </div>
+                ) : (
+                  filteredItems.map(item => (
+                    <div
+                      key={item.id}
+                      className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                        selectedItem?.id === item.id
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                      onClick={() => setSelectedItem(item)}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h4 className="font-medium arabic-text">{item.brand} {item.model}</h4>
+                          <p className="text-sm text-gray-600 arabic-text">
+                            اللون: {item.color} | سنة الصنع: {item.manufacturingYear}
+                          </p>
+                          <p className="text-xs text-gray-500 font-mono">
+                            بصمة الموتور: {item.motorFingerprint}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-medium text-green-600">
+                            {(item.salePrice || item.purchasePrice)?.toLocaleString()} جنيه
+                          </p>
+                          {/* لا نعرض سعر الشراء أو الربح لموظف البيع */}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* نموذج بيانات العميل */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              بيانات العميل
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="customerName" required>اسم العميل</Label>
+                <Input
+                  id="customerName"
+                  {...register('customerName', { required: 'اسم العميل مطلوب' })}
+                  placeholder="أدخل اسم العميل"
+                  className="input-rtl arabic-text"
+                />
+                {errors.customerName && (
+                  <p className="text-sm text-destructive arabic-text">{errors.customerName.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="customerPhone" required>رقم الهاتف</Label>
+                <div className="relative">
+                  <Phone className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="customerPhone"
+                    {...register('customerPhone', { required: 'رقم الهاتف مطلوب' })}
+                    placeholder="01xxxxxxxxx"
+                    className="pr-10 input-rtl"
+                  />
+                </div>
+                {errors.customerPhone && (
+                  <p className="text-sm text-destructive arabic-text">{errors.customerPhone.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="customerNationalId" required>الرقم القومي</Label>
+                <Input
+                  id="customerNationalId"
+                  {...register('customerNationalId', { required: 'الرقم القومي مطلوب' })}
+                  placeholder="xxxxxxxxxxxxxx"
+                  className="input-rtl"
+                />
+                {errors.customerNationalId && (
+                  <p className="text-sm text-destructive arabic-text">{errors.customerNationalId.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="customerAddress">العنوان</Label>
+                <div className="relative">
+                  <MapPin className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                  <textarea
+                    id="customerAddress"
+                    {...register('customerAddress')}
+                    placeholder="أدخل عنوان العميل"
+                    className="form-input w-full pr-10 input-rtl arabic-text min-h-[80px] resize-none"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="notes">ملاحظات</Label>
+                <textarea
+                  id="notes"
+                  {...register('notes')}
+                  placeholder="أي ملاحظات إضافية"
+                  className="form-input w-full input-rtl arabic-text min-h-[60px] resize-none"
+                />
+              </div>
+
+              {/* ملخص البيع */}
+              {selectedItem && (
+                <div className="p-4 bg-gray-50 rounded-lg space-y-2">
+                  <h4 className="font-medium arabic-text">ملخص البيع</h4>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span>المنتج:</span>
+                      <span className="arabic-text">{selectedItem.brand} {selectedItem.model}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>سعر البيع:</span>
+                      <span className="font-medium text-green-600">
+                        {(selectedItem.salePrice || selectedItem.purchasePrice)?.toLocaleString()} جنيه
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={!selectedItem || submitting}
+              >
+                <Save className="ml-2 h-4 w-4" />
+                {submitting ? 'جاري الحفظ...' : 'إنشاء فاتورة البيع'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}

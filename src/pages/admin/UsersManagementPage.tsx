@@ -42,7 +42,9 @@ interface BadgeProps extends React.HTMLAttributes<HTMLDivElement>, VariantProps<
 function Badge({ className, variant, ...props }: BadgeProps) {
   return <div className={cn(badgeVariants({ variant }), className)} {...props} />
 }
-import { useAuth } from '../../hooks/useAuth'
+import { useUserData } from '@/hooks/useUserData'
+import { useAuthState } from 'react-firebase-hooks/auth'
+import { auth } from '@/firebase/firebase-config.template'
 import { toast } from 'sonner'
 import { 
   collection, 
@@ -82,17 +84,19 @@ interface Warehouse {
   type: string
 }
 
-// الأدوار المتاحة
-const ROLES = [
-  { id: 'super_admin', name: 'مدير أعلى', permissions: ['all'] },
-  { id: 'admin', name: 'مدير', permissions: ['users.manage', 'agents.manage', 'inventory.manage', 'sales.manage', 'reports.view'] },
-  { id: 'manager', name: 'مدير عام', permissions: ['agents.view', 'inventory.manage', 'sales.manage', 'reports.view'] },
-  { id: 'agent', name: 'وكيل', permissions: ['sales.create_own', 'inventory.view_own', 'documents.view_own'] },
-  { id: 'employee', name: 'موظف', permissions: ['inventory.view', 'sales.view'] }
-]
+import { USER_ROLES, canManageUsers } from '@/lib/permissions'
+
+// استخدام الأدوار من نظام الصلاحيات
+const ROLES = USER_ROLES
 
 export function UsersManagementPage() {
-  const { userData, isAdminOrHigher } = useAuth()
+  const [user] = useAuthState(auth)
+  const { userData } = useUserData(user?.uid)
+  
+  // دالة للتحقق من صلاحيات المدير
+  const isAdminOrHigher = () => {
+    return canManageUsers(userData?.role || '')
+  }
   const [users, setUsers] = useState<User[]>([])
   const [agents, setAgents] = useState<Agent[]>([])
   const [warehouses, setWarehouses] = useState<Warehouse[]>([])
@@ -106,7 +110,7 @@ export function UsersManagementPage() {
     name: '',
     email: '',
     phone: '',
-    role: 'employee',
+    role: 'sales_employee',
     agentId: '',
     warehouseId: '',
     department: ''
@@ -198,7 +202,7 @@ export function UsersManagementPage() {
         name: '',
         email: '',
         phone: '',
-        role: 'employee',
+        role: 'sales_employee',
         agentId: '',
         warehouseId: '',
         department: ''
@@ -270,17 +274,17 @@ export function UsersManagementPage() {
   }
 
   const getRoleName = (roleId: string) => {
-    const role = ROLES.find(r => r.id === roleId)
-    return role?.name || 'غير محدد'
+    const role = ROLES.find(r => r.name === roleId)
+    return role?.displayName || 'غير محدد'
   }
 
   const getRoleColor = (roleId: string) => {
     switch (roleId) {
       case 'super_admin': return 'bg-red-100 text-red-800'
-      case 'admin': return 'bg-purple-100 text-purple-800'
-      case 'manager': return 'bg-blue-100 text-blue-800'
+      case 'admin_manager': return 'bg-purple-100 text-purple-800'
+      case 'sales_employee': return 'bg-blue-100 text-blue-800'
       case 'agent': return 'bg-orange-100 text-orange-800'
-      case 'employee': return 'bg-green-100 text-green-800'
+      case 'admin': return 'bg-indigo-100 text-indigo-800' // للمدير الحالي
       default: return 'bg-gray-100 text-gray-800'
     }
   }
@@ -356,8 +360,8 @@ export function UsersManagementPage() {
             >
               <option value="all">جميع الأدوار</option>
               {ROLES.map((role) => (
-                <option key={role.id} value={role.id}>
-                  {role.name}
+                <option key={role.id} value={role.name}>
+                  {role.displayName}
                 </option>
               ))}
             </select>
@@ -550,8 +554,8 @@ export function UsersManagementPage() {
                   className="w-full p-2 border border-gray-300 rounded-md"
                 >
                   {ROLES.map((role) => (
-                    <option key={role.id} value={role.id}>
-                      {role.name}
+                    <option key={role.id} value={role.name}>
+                      {role.displayName}
                     </option>
                   ))}
                 </select>
@@ -669,8 +673,8 @@ export function UsersManagementPage() {
                   className="w-full p-2 border border-gray-300 rounded-md"
                 >
                   {ROLES.map((role) => (
-                    <option key={role.id} value={role.id}>
-                      {role.name}
+                    <option key={role.id} value={role.name}>
+                      {role.displayName}
                     </option>
                   ))}
                 </select>

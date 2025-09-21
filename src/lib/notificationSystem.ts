@@ -13,6 +13,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '../firebase/firebase-config.template'
 import { toast } from 'sonner'
+import { pushNotificationManager } from './pushNotifications'
 
 /**
  * أنواع الإشعارات
@@ -94,6 +95,26 @@ class NotificationSystem {
       }
 
       const docRef = await addDoc(collection(db, 'notifications'), notificationData)
+      
+      // إرسال Push Notification للمستخدمين خارج التطبيق
+      try {
+        await pushNotificationManager.sendPushNotification({
+          userIds: [notification.recipientId],
+          title: notification.title,
+          body: notification.message,
+          actionUrl: notification.actionUrl,
+          data: {
+            notificationId: docRef.id,
+            type: notification.type,
+            priority: notification.priority,
+            ...notification.data
+          }
+        })
+        console.log('📱 Push notification sent')
+      } catch (pushError) {
+        console.error('❌ Failed to send push notification:', pushError)
+        // لا نوقف العملية إذا فشل Push Notification
+      }
       
       console.log('✅ Notification sent successfully:', docRef.id, notificationData)
       return docRef.id

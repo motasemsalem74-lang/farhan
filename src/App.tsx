@@ -30,6 +30,7 @@ import { UserManagementPage } from './pages/admin/UserManagementPage'
 import { useUserData } from './hooks/useUserData'
 import { initializeWarehouses } from './utils/initializeWarehouses'
 import { useNotifications } from './hooks/useNotifications'
+import { pushNotificationManager } from './lib/pushNotifications'
 
 // PWA Support
 import { offlineStorage } from './lib/offlineStorage'
@@ -70,6 +71,15 @@ function App() {
     if (userData) {
       // Initialize warehouses
       initializeWarehouses()
+      
+      // Initialize Push Notifications
+      pushNotificationManager.initialize().then(() => {
+        console.log('📱 Push notifications initialized')
+        // Store current user ID for FCM token
+        localStorage.setItem('currentUserId', userData.id)
+      }).catch(error => {
+        console.error('❌ Push notifications failed to initialize:', error)
+      })
       
       // Initialize PWA features
       try {

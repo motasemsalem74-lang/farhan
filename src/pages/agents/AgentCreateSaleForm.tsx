@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { ImprovedCameraOCR } from '@/components/ui/ImprovedCameraOCR'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { useUserData } from '@/hooks/useUserData'
+import { useNotificationSender } from '@/hooks/useNotifications'
 import { Agent, InventoryItem } from '@/types'
 import { generateTransactionId, formatCurrency } from '@/lib/utils'
 import { uploadToCloudinary } from '@/lib/cloudinary'
@@ -42,6 +43,7 @@ export default function AgentCreateSaleForm({
 }: AgentCreateSaleFormProps) {
   const [user] = useAuthState(auth)
   const { userData } = useUserData(user?.uid)
+  const { sendNewSaleNotification } = useNotificationSender()
   const [loading, setLoading] = useState(false)
   const [showIdCapture, setShowIdCapture] = useState(false)
   const [customerIdImage, setCustomerIdImage] = useState<string>('')
@@ -242,7 +244,7 @@ export default function AgentCreateSaleForm({
         createdBy: userData.id
       }
 
-      await addDoc(collection(db, 'document_tracking'), documentTracking)
+      const documentRef = await addDoc(collection(db, 'document_tracking'), documentTracking)
 
       // تحديث رصيد الوكيل - إضافة نصيب الشركة كمديونية (مثل نظام العملاء)
       const agentTransaction = {
@@ -267,6 +269,26 @@ export default function AgentCreateSaleForm({
         currentBalance: (agent.currentBalance || 0) - companyShare,
         lastTransactionDate: serverTimestamp()
       })
+
+      // إرسال إشعار للمديرين بالبيعة الجديدة
+      try {
+        await sendNewSaleNotification({
+          agentId: agent.id,
+          agentName: agent.name,
+          documentId: documentRef.id,
+          customerName: data.customerName,
+          totalAmount: data.salePrice,
+          items: [{
+            name: `${selectedItem.brand} ${selectedItem.model}`,
+            quantity: 1,
+            price: data.salePrice,
+            type: selectedItem.type
+          }]
+        })
+      } catch (notificationError) {
+        console.error('Failed to send notification:', notificationError)
+        // لا نوقف العملية إذا فشل الإشعار
+      }
 
       toast.success('تم إنشاء فاتورة البيع بنجاح وبدء تتبع الوثائق')
       onSuccess()

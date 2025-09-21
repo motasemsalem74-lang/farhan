@@ -56,6 +56,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { CompositeImageDisplay } from '@/components/ui/CompositeImageDisplay'
 import { useUserData } from '@/hooks/useUserData'
+import { useNotificationSender } from '@/hooks/useNotifications'
 import { formatDate, isAdmin, isSuperAdmin } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { DocumentTracking } from '@/types'
@@ -81,6 +82,7 @@ export function DocumentDetailsPage() {
   const navigate = useNavigate()
   const [user] = useAuthState(auth)
   const { userData } = useUserData(user?.uid)
+  const { sendDocumentStatusUpdate } = useNotificationSender()
   const [document, setDocument] = useState<DocumentTracking | null>(null)
   const [statusHistory, setStatusHistory] = useState<DocumentStatusHistory[]>([])
   const [loading, setLoading] = useState(true)
@@ -219,6 +221,25 @@ export function DocumentDetailsPage() {
         updatedAt: new Date(),
         updatedBy: userData.id
       })
+
+      // إرسال إشعار للوكيل بتحديث حالة الوثيقة
+      try {
+        if ((document as any).agentId) {
+          await sendDocumentStatusUpdate({
+            documentId: document.id,
+            agentId: (document as any).agentId,
+            agentName: (document as any).agentName || 'الوكيل',
+            oldStatus: document.status,
+            newStatus: nextStatus,
+            updatedBy: userData.id,
+            updatedByName: userData.displayName || userData.email || 'المدير',
+            customerName: document.customerName
+          })
+        }
+      } catch (notificationError) {
+        console.error('Failed to send notification:', notificationError)
+        // لا نوقف العملية إذا فشل الإشعار
+      }
 
       toast.success('تم تحديث حالة الوثيقة بنجاح')
       

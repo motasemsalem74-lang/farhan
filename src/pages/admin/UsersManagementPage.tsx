@@ -108,15 +108,19 @@ export function UsersManagementPage() {
     console.log('🔐 Checking user permissions...')
     console.log('👤 Current user data:', userData)
     console.log('🎭 User role:', userData?.role)
-    console.log('✅ Is admin or higher:', isAdminOrHigher())
     
-    if (isAdminOrHigher()) {
-      console.log('🚀 User has permissions, loading data...')
-      loadData()
-    } else {
-      console.log('❌ User does not have permissions')
+    if (userData) {
+      const hasPermissions = userData.role === 'super_admin' || userData.role === 'admin'
+      console.log('✅ Is admin or higher:', hasPermissions)
+      
+      if (hasPermissions) {
+        console.log('🚀 User has permissions, loading data...')
+        loadData()
+      } else {
+        console.log('❌ User does not have permissions')
+      }
     }
-  }, [userData, isAdminOrHigher])
+  }, [userData])
 
   const loadData = async () => {
     try {
@@ -137,6 +141,7 @@ export function UsersManagementPage() {
       setUsers(usersData)
       
       console.log('✅ All data loaded successfully')
+      console.log('📋 Current users state:', usersData)
     } catch (error) {
       console.error('❌ Error loading data:', error)
       toast.error('فشل في تحميل البيانات')
@@ -146,6 +151,8 @@ export function UsersManagementPage() {
   }
 
   const filteredUsers = users.filter(user => {
+    if (!user) return false
+    
     const matchesSearch = 
       (user.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (user.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -158,6 +165,14 @@ export function UsersManagementPage() {
 
     return matchesSearch && matchesRole && matchesStatus
   })
+  
+  // Debug logs للفلترة
+  console.log('🔍 Filtering users:')
+  console.log('📊 Total users:', users.length)
+  console.log('🔎 Search term:', searchTerm)
+  console.log('🎭 Selected role:', selectedRole)
+  console.log('📈 Selected status:', selectedStatus)
+  console.log('✅ Filtered users:', filteredUsers.length, filteredUsers)
 
   const handleCreateUser = async () => {
     if (!userData?.id || !newUser.name || !newUser.email || !newUser.password) {

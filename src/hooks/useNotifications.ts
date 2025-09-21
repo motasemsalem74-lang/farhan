@@ -93,9 +93,11 @@ export function useNotificationSender() {
     items: any[]
   }) => {
     try {
+      console.log('📤 useNotificationSender: sendNewSaleNotification called with:', saleData)
       await notificationSystem.notifyNewSale(saleData)
+      console.log('✅ useNotificationSender: Notification sent successfully')
     } catch (error) {
-      console.error('Failed to send new sale notification:', error)
+      console.error('❌ useNotificationSender: Failed to send new sale notification:', error)
       throw error
     }
   }

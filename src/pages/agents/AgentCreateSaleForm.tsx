@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { ImprovedCameraOCR } from '@/components/ui/ImprovedCameraOCR'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { useUserData } from '@/hooks/useUserData'
-import { useNotificationSender } from '@/hooks/useNotifications'
+import { SimpleNotificationSystem } from '@/lib/simpleNotifications'
 import { Agent, InventoryItem } from '@/types'
 import { generateTransactionId, formatCurrency } from '@/lib/utils'
 import { uploadToCloudinary } from '@/lib/cloudinary'
@@ -43,7 +43,7 @@ export default function AgentCreateSaleForm({
 }: AgentCreateSaleFormProps) {
   const [user] = useAuthState(auth)
   const { userData } = useUserData(user?.uid)
-  const { sendNewSaleNotification } = useNotificationSender()
+  // استخدام النظام المبسط للإشعارات
   const [loading, setLoading] = useState(false)
   const [showIdCapture, setShowIdCapture] = useState(false)
   const [customerIdImage, setCustomerIdImage] = useState<string>('')
@@ -105,15 +105,20 @@ export default function AgentCreateSaleForm({
   }
 
   const onSubmit = async (data: SaleFormData) => {
-    if (!selectedItem || !userData || !agent) {
+    console.log('🚀 SALE FORM SUBMITTED - Starting process...')
+    
+    if (!agent || !selectedItem || !userData) {
+      console.log('❌ Missing required data:', { agent: !!agent, selectedItem: !!selectedItem, userData: !!userData })
       toast.error('بيانات غير مكتملة')
       return
     }
+    
+    console.log('✅ All required data available, proceeding with sale creation...')
 
     try {
       setLoading(true)
       
-      const transactionId = generateTransactionId()
+      const transactionId = generateTransactionId('sale')
       const invoiceNumber = `INV-${Date.now()}`
 
       // إنشاء معاملة البيع
@@ -273,18 +278,12 @@ export default function AgentCreateSaleForm({
       // إرسال إشعار للمديرين بالبيعة الجديدة
       console.log('🔔 Attempting to send sale notification...')
       try {
-        await sendNewSaleNotification({
+        await SimpleNotificationSystem.notifyNewSale({
           agentId: agent.id,
           agentName: agent.name,
           documentId: documentRef.id,
           customerName: data.customerName,
-          totalAmount: data.salePrice,
-          items: [{
-            name: `${selectedItem.brand} ${selectedItem.model}`,
-            quantity: 1,
-            price: data.salePrice,
-            type: selectedItem.type
-          }]
+          totalAmount: data.salePrice
         })
         console.log('✅ Sale notification sent successfully!')
       } catch (notificationError) {

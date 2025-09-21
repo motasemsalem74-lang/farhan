@@ -243,7 +243,15 @@ export function WarehouseTransferPage() {
       // Process each selected item
       for (const item of selectedItems) {
         const commissionPercentage = itemCommissions[item.id] || 0
-        totalDebtChange += item.purchasePrice
+        const itemPrice = Number(item.purchasePrice) || 0
+        totalDebtChange += itemPrice
+        
+        console.log('Processing item:', {
+          itemId: item.id,
+          purchasePrice: item.purchasePrice,
+          itemPrice,
+          totalDebtChange
+        })
         
         // Generate transaction ID
         const transactionId = generateTransactionId('warehouse_transfer')
@@ -299,6 +307,19 @@ export function WarehouseTransferPage() {
       if (isTransferringFromAgent && isTransferringToAgent && sourceWarehouse?.agentId && targetWarehouse?.agentId) {
         // Transfer between two agents
         console.log('Transferring between agents - updating both debts')
+        
+        // Decrease debt for source agent (they gave items)
+        await updateAgentDebt(sourceWarehouse.agentId, totalDebtChange, 'decrease', `تحويل ${selectedItems.length} موتوسيكل للوكيل ${targetWarehouse.name}`)
+        
+        // Increase debt for target agent (they received items)
+        await updateAgentDebt(targetWarehouse.agentId, totalDebtChange, 'increase', `استلام ${selectedItems.length} موتوسيكل من الوكيل ${sourceWarehouse.name}`)
+        
+        toast.success(`تم تحويل ${selectedItems.length} صنف بين الوكلاء وتحديث المديونيات`)
+      } else if (isTransferringToAgent && targetWarehouse?.agentId && !sourceWarehouse?.agentId) {
+        // Transferring TO agent from main warehouse - INCREASE debt (agent owes more to company)
+        console.log('Updating agent debt - increase for agent:', targetWarehouse.agentId, 'amount:', totalDebtChange)
+        await updateAgentDebt(targetWarehouse.agentId, totalDebtChange, 'increase', `استلام ${selectedItems.length} موتوسيكل من الشركة`)
+        console.log('Agent debt updated successfully')
         toast.success(`تم تحويل ${selectedItems.length} صنف للوكيل وإضافة ${Math.round(totalDebtChange).toLocaleString()} جنيه للمديونية`)
       } else if (isTransferringFromAgent && sourceWarehouse?.agentId && !targetWarehouse?.agentId) {
         // Transferring FROM agent to main warehouse - DECREASE debt (agent owes less to company)

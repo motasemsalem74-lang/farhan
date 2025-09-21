@@ -95,6 +95,7 @@ export function UsersManagementPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [creating, setCreating] = useState(false)
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
@@ -166,13 +167,15 @@ export function UsersManagementPage() {
     return matchesSearch && matchesRole && matchesStatus
   })
   
-  // Debug logs للفلترة
-  console.log('🔍 Filtering users:')
-  console.log('📊 Total users:', users.length)
-  console.log('🔎 Search term:', searchTerm)
-  console.log('🎭 Selected role:', selectedRole)
-  console.log('📈 Selected status:', selectedStatus)
-  console.log('✅ Filtered users:', filteredUsers.length, filteredUsers)
+  // Debug logs للفلترة (فقط عند التغيير)
+  useEffect(() => {
+    console.log('🔍 Filtering users:')
+    console.log('📊 Total users:', users.length)
+    console.log('🔎 Search term:', searchTerm)
+    console.log('🎭 Selected role:', selectedRole)
+    console.log('📈 Selected status:', selectedStatus)
+    console.log('✅ Filtered users:', filteredUsers.length, filteredUsers)
+  }, [users.length, searchTerm, selectedRole, selectedStatus])
 
   const handleCreateUser = async () => {
     if (!userData?.id || !newUser.name || !newUser.email || !newUser.password) {
@@ -186,6 +189,7 @@ export function UsersManagementPage() {
     }
 
     try {
+      setCreating(true)
       console.log('🔐 Creating Firebase Auth user...')
       
       // إنشاء المستخدم في Firebase Auth
@@ -228,6 +232,8 @@ export function UsersManagementPage() {
     } catch (error) {
       console.error('Error creating user:', error)
       toast.error('فشل في إنشاء المستخدم')
+    } finally {
+      setCreating(false)
     }
   }
 
@@ -404,6 +410,13 @@ export function UsersManagementPage() {
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <span className="ml-3 text-gray-600">جاري تحميل المستخدمين...</span>
+            </div>
+          ) : users.length === 0 ? (
+            <div className="text-center py-12">
+              <Users className="h-12 w-12 mx-auto text-gray-300 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">لا توجد مستخدمين في النظام</h3>
+              <p className="text-gray-600">ابدأ بإضافة أول مستخدم</p>
             </div>
           ) : filteredUsers.length === 0 ? (
             <div className="text-center py-12">
@@ -592,9 +605,22 @@ export function UsersManagementPage() {
               </div>
               
               <div className="flex gap-2">
-                <Button onClick={handleCreateUser} className="flex-1">
-                  <Save className="h-4 w-4 mr-2" />
-                  إنشاء
+                <Button 
+                  onClick={handleCreateUser} 
+                  className="flex-1"
+                  disabled={creating}
+                >
+                  {creating ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      جاري الإنشاء...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      إنشاء
+                    </>
+                  )}
                 </Button>
                 <Button 
                   variant="outline" 

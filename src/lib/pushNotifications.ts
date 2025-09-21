@@ -112,17 +112,23 @@ class PushNotificationManager {
       
       const { notification, data } = payload
       
-      // Show toast notification
-      toast.info(notification?.title || 'إشعار جديد', {
-        description: notification?.body || '',
-        action: data?.actionUrl ? {
-          label: 'عرض',
-          onClick: () => {
-            window.location.href = data.actionUrl
-          }
-        } : undefined,
-        duration: 8000
-      })
+      // عرض toast فقط للإشعارات المهمة
+      const priority = data?.priority || 'medium'
+      if (priority === 'high' || priority === 'urgent') {
+        toast.info(notification?.title || 'إشعار مهم', {
+          description: notification?.body || '',
+          action: data?.actionUrl ? {
+            label: 'عرض',
+            onClick: () => {
+              window.location.href = data.actionUrl
+            }
+          } : undefined,
+          duration: 6000
+        })
+      } else {
+        // للإشعارات العادية، فقط تحديث العداد بدون toast
+        console.log('📋 Normal priority notification received silently')
+      }
     })
   }
 

@@ -228,30 +228,23 @@ class NotificationSystem {
   }
 
   /**
-   * إرسال إشعار تحويل بضاعة للوكيل
+   * إرسال إشعار تحويل مخزون للوكيل
    */
   async notifyInventoryTransfer(transferData: {
     agentId: string
     agentName: string
-    items: Array<{
-      name: string
-      quantity: number
-      unit: string
-    }>
+    itemName: string
+    quantity: number
+    fromWarehouse: string
+    toWarehouse: string
     transferredBy: string
     transferredByName: string
-    warehouseFrom?: string
-    notes?: string
   }): Promise<void> {
     try {
-      const itemsList = transferData.items
-        .map(item => `${item.quantity} ${item.unit} ${item.name}`)
-        .join(', ')
-
       await this.sendNotification({
         type: NotificationType.INVENTORY_TRANSFERRED,
-        title: '📦 تحويل بضاعة',
-        message: `تم تحويل بضاعة إليك: ${itemsList}`,
+        title: '📦 تحويل مخزون',
+        message: `تم تحويل ${transferData.quantity} ${transferData.itemName} من ${transferData.fromWarehouse} إلى ${transferData.toWarehouse}`,
         recipientId: transferData.agentId,
         recipientRole: 'agent',
         senderId: transferData.transferredBy,
@@ -259,16 +252,94 @@ class NotificationSystem {
         priority: NotificationPriority.MEDIUM,
         actionUrl: '/inventory',
         data: {
-          items: transferData.items,
-          warehouseFrom: transferData.warehouseFrom,
-          notes: transferData.notes,
-          totalItems: transferData.items.length
+          itemName: transferData.itemName,
+          quantity: transferData.quantity,
+          fromWarehouse: transferData.fromWarehouse,
+          toWarehouse: transferData.toWarehouse
         }
       })
-
-      console.log('✅ Inventory transfer notification sent to agent')
+      
+      console.log('✅ Inventory transfer notification sent')
     } catch (error) {
       console.error('❌ Failed to notify inventory transfer:', error)
+      throw error
+    }
+  }
+
+  /**
+   * إرسال إشعار إضافة/خصم رصيد للوكيل
+   */
+  async notifyBalanceChange(balanceData: {
+    agentId: string
+    agentName: string
+    amount: number
+    operation: 'add' | 'deduct'
+    newBalance: number
+    description: string
+    changedBy: string
+    changedByName: string
+  }): Promise<void> {
+    try {
+      const isAddition = balanceData.operation === 'add'
+      
+      await this.sendNotification({
+        type: isAddition ? NotificationType.PAYMENT_ADDED : NotificationType.PAYMENT_DEDUCTED,
+        title: isAddition ? '💰 إضافة رصيد' : '💸 خصم رصيد',
+        message: `تم ${isAddition ? 'إضافة' : 'خصم'} ${Math.abs(balanceData.amount).toLocaleString()} جنيه ${isAddition ? 'إلى' : 'من'} رصيدك. الرصيد الحالي: ${balanceData.newBalance.toLocaleString()} جنيه`,
+        recipientId: balanceData.agentId,
+        recipientRole: 'agent',
+        senderId: balanceData.changedBy,
+        senderName: balanceData.changedByName,
+        priority: NotificationPriority.HIGH,
+        actionUrl: `/agents/payments/${balanceData.agentId}`,
+        data: {
+          amount: balanceData.amount,
+          operation: balanceData.operation,
+          newBalance: balanceData.newBalance,
+          description: balanceData.description
+        }
+      })
+      
+      console.log('✅ Balance change notification sent')
+    } catch (error) {
+      console.error('❌ Failed to notify balance change:', error)
+      throw error
+    }
+  }
+
+  /**
+   * إرسال إشعار سحب مخزون من الوكيل
+   */
+  async notifyInventoryWithdrawal(withdrawalData: {
+    agentId: string
+    agentName: string
+    itemName: string
+    quantity: number
+    reason: string
+    withdrawnBy: string
+    withdrawnByName: string
+  }): Promise<void> {
+    try {
+      await this.sendNotification({
+        type: NotificationType.INVENTORY_WITHDRAWN,
+        title: '📤 سحب مخزون',
+        message: `تم سحب ${withdrawalData.quantity} ${withdrawalData.itemName} من مخزونك. السبب: ${withdrawalData.reason}`,
+        recipientId: withdrawalData.agentId,
+        recipientRole: 'agent',
+        senderId: withdrawalData.withdrawnBy,
+        senderName: withdrawalData.withdrawnByName,
+        priority: NotificationPriority.HIGH,
+        actionUrl: '/inventory',
+        data: {
+          itemName: withdrawalData.itemName,
+          quantity: withdrawalData.quantity,
+          reason: withdrawalData.reason
+        }
+      })
+      
+      console.log('✅ Inventory withdrawal notification sent')
+    } catch (error) {
+      console.error('❌ Failed to notify inventory withdrawal:', error)
       throw error
     }
   }
@@ -319,51 +390,6 @@ class NotificationSystem {
     }
   }
 
-  /**
-   * إرسال إشعار سحب بضاعة من الوكيل
-   */
-  async notifyInventoryWithdrawal(withdrawalData: {
-    agentId: string
-    agentName: string
-    items: Array<{
-      name: string
-      quantity: number
-      unit: string
-    }>
-    withdrawnBy: string
-    withdrawnByName: string
-    reason?: string
-    newInventoryValue?: number
-  }): Promise<void> {
-    try {
-      const itemsList = withdrawalData.items
-        .map(item => `${item.quantity} ${item.unit} ${item.name}`)
-        .join(', ')
-
-      await this.sendNotification({
-        type: NotificationType.INVENTORY_WITHDRAWN,
-        title: '📤 سحب بضاعة',
-        message: `تم سحب بضاعة منك: ${itemsList}`,
-        recipientId: withdrawalData.agentId,
-        recipientRole: 'agent',
-        senderId: withdrawalData.withdrawnBy,
-        senderName: withdrawalData.withdrawnByName,
-        priority: NotificationPriority.MEDIUM,
-        actionUrl: '/inventory',
-        data: {
-          items: withdrawalData.items,
-          reason: withdrawalData.reason,
-          newInventoryValue: withdrawalData.newInventoryValue,
-          totalItems: withdrawalData.items.length
-        }
-      })
-
-      console.log('✅ Inventory withdrawal notification sent to agent')
-    } catch (error) {
-      console.error('❌ Failed to notify inventory withdrawal:', error)
-      throw error
-    }
-  }
 
   /**
    * الحصول على إشعارات المستخدم

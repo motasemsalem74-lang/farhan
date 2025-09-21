@@ -101,8 +101,13 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
 
     // Navigate to action URL if available
     if (notification.actionUrl) {
-      navigate(notification.actionUrl)
+      console.log('🔗 Navigating to:', notification.actionUrl)
+      // تأكد من أن الرابط صحيح
+      const url = notification.actionUrl.startsWith('/') ? notification.actionUrl : `/${notification.actionUrl}`
+      navigate(url)
       onClose()
+    } else {
+      console.log('⚠️ No action URL for notification:', notification.title)
     }
   }
 

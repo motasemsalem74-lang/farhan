@@ -127,7 +127,11 @@ class PWAManager {
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault()
       this.installPrompt = e as PWAInstallPrompt
-      this.showInstallBanner()
+      
+      // تأخير بسيط لضمان تحميل التطبيق أولاً
+      setTimeout(() => {
+        this.showInstallBanner()
+      }, 3000) // 3 ثوانِ
     })
 
     window.addEventListener('appinstalled', () => {
@@ -166,18 +170,16 @@ class PWAManager {
    * عرض بانر التثبيت
    */
   private showInstallBanner(): void {
-    // تم تعطيل رسالة التثبيت التلقائية
-    // يمكن للمستخدم التثبيت من الإعدادات إذا أراد
-    console.log('📱 PWA: Install prompt available but disabled')
+    console.log('📱 PWA: Install prompt available - showing banner')
     
-    // toast.info('يمكن تثبيت التطبيق على جهازك', {
-    //   description: 'للحصول على تجربة أفضل وسرعة أكبر',
-    //   action: {
-    //     label: 'تثبيت',
-    //     onClick: () => this.installApp()
-    //   },
-    //   duration: 15000
-    // })
+    toast.info('🚀 ثبت التطبيق على جهازك', {
+      description: 'للحصول على تجربة أفضل وسرعة أكبر في الوصول',
+      action: {
+        label: 'تثبيت الآن',
+        onClick: () => this.installApp()
+      },
+      duration: 20000 // 20 ثانية
+    })
   }
 
   /**

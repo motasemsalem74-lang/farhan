@@ -72,17 +72,7 @@ interface User {
   lastLoginAt?: any
 }
 
-interface Agent {
-  id: string
-  name: string
-  warehouseId: string
-}
-
-interface Warehouse {
-  id: string
-  name: string
-  type: string
-}
+// لا نحتاج Agent و Warehouse interfaces لأننا أزلنا دور الوكيل
 
 import { USER_ROLES, canManageUsers } from '@/lib/permissions'
 
@@ -98,8 +88,6 @@ export function UsersManagementPage() {
     return userData?.role === 'super_admin' || userData?.role === 'admin'
   }
   const [users, setUsers] = useState<User[]>([])
-  const [agents, setAgents] = useState<Agent[]>([])
-  const [warehouses, setWarehouses] = useState<Warehouse[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedRole, setSelectedRole] = useState<string>('all')
@@ -111,8 +99,6 @@ export function UsersManagementPage() {
     email: '',
     phone: '',
     role: 'sales_employee',
-    agentId: '',
-    warehouseId: '',
     department: ''
   })
 
@@ -146,23 +132,7 @@ export function UsersManagementPage() {
       
       console.log('👥 Users data loaded:', usersData.length, usersData)
       
-      // تحميل الوكلاء
-      const agentsSnapshot = await getDocs(collection(db, 'agents'))
-      const agentsData = agentsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Agent[]
-      
-      // تحميل المخازن
-      const warehousesSnapshot = await getDocs(collection(db, 'warehouses'))
-      const warehousesData = warehousesSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Warehouse[]
-      
       setUsers(usersData)
-      setAgents(agentsData)
-      setWarehouses(warehousesData)
       
       console.log('✅ All data loaded successfully')
     } catch (error) {
@@ -218,8 +188,6 @@ export function UsersManagementPage() {
         email: '',
         phone: '',
         role: 'sales_employee',
-        agentId: '',
-        warehouseId: '',
         department: ''
       })
       await loadData()
@@ -307,15 +275,7 @@ export function UsersManagementPage() {
     }
   }
 
-  const getAgentName = (agentId: string) => {
-    const agent = agents.find(a => a.id === agentId)
-    return agent?.name || 'غير محدد'
-  }
-
-  const getWarehouseName = (warehouseId: string) => {
-    const warehouse = warehouses.find(w => w.id === warehouseId)
-    return warehouse?.name || 'غير محدد'
-  }
+  // لا نحتاج دوال getAgentName و getWarehouseName لأننا أزلنا دور الوكيل
 
   if (!isAdminOrHigher()) {
     return (

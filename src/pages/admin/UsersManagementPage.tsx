@@ -44,6 +44,7 @@ function Badge({ className, variant, ...props }: BadgeProps) {
 }
 import { useUserData } from '@/hooks/useUserData'
 import { useAuthState } from 'react-firebase-hooks/auth'
+import { createUserWithEmailAndPassword } from 'firebase/auth'
 import { auth } from '@/firebase/firebase-config.template'
 import { toast } from 'sonner'
 import { 
@@ -98,6 +99,7 @@ export function UsersManagementPage() {
     name: '',
     email: '',
     phone: '',
+    password: '',
     role: 'sales_employee',
     department: ''
   })
@@ -158,14 +160,29 @@ export function UsersManagementPage() {
   })
 
   const handleCreateUser = async () => {
-    if (!userData?.id || !newUser.name || !newUser.email) {
+    if (!userData?.id || !newUser.name || !newUser.email || !newUser.password) {
       toast.error('يرجى ملء جميع الحقول المطلوبة')
       return
     }
 
+    if (newUser.password.length < 6) {
+      toast.error('كلمة المرور يجب أن تكون 6 أحرف على الأقل')
+      return
+    }
+
     try {
+      console.log('🔐 Creating Firebase Auth user...')
+      
+      // إنشاء المستخدم في Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(auth, newUser.email, newUser.password)
+      const firebaseUser = userCredential.user
+      
+      console.log('✅ Firebase Auth user created:', firebaseUser.uid)
+      
+      // إنشاء بيانات المستخدم في Firestore
       const userRole = ROLES.find(r => r.name === newUser.role)
       const userDoc = {
+        uid: firebaseUser.uid,
         name: newUser.name,
         email: newUser.email,
         phone: newUser.phone || '',
@@ -177,9 +194,10 @@ export function UsersManagementPage() {
         createdBy: userData.id
       }
       
-      // لا نضيف agentId أو warehouseId لأننا أزلنا دور الوكيل
-
-      await setDoc(doc(db, 'users', newUser.email.replace('@', '_').replace('.', '_')), userDoc)
+      console.log('💾 Saving user data to Firestore...')
+      
+      // حفظ بيانات المستخدم في Firestore
+      await setDoc(doc(db, 'users', firebaseUser.uid), userDoc)
       
       toast.success('تم إنشاء المستخدم بنجاح')
       setShowCreateDialog(false)
@@ -187,6 +205,7 @@ export function UsersManagementPage() {
         name: '',
         email: '',
         phone: '',
+        password: '',
         role: 'sales_employee',
         department: ''
       })
@@ -515,6 +534,17 @@ export function UsersManagementPage() {
                   value={newUser.phone}
                   onChange={(e) => setNewUser({...newUser, phone: e.target.value})}
                   placeholder="أدخل رقم الهاتف"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="password" required>كلمة المرور</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={newUser.password}
+                  onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                  placeholder="أدخل كلمة المرور (6 أحرف على الأقل)"
                 />
               </div>
               

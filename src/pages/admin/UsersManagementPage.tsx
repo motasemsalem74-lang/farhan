@@ -194,20 +194,20 @@ export function UsersManagementPage() {
     }
 
     try {
-      const userRole = ROLES.find(r => r.id === newUser.role)
+      const userRole = ROLES.find(r => r.name === newUser.role)
       const userDoc = {
         name: newUser.name,
         email: newUser.email,
-        phone: newUser.phone,
+        phone: newUser.phone || '',
         role: newUser.role,
-        agentId: newUser.role === 'agent' ? newUser.agentId : undefined,
-        warehouseId: newUser.role === 'agent' ? newUser.warehouseId : undefined,
-        department: newUser.department,
+        department: newUser.department || '',
         permissions: userRole?.permissions || [],
         isActive: true,
         createdAt: serverTimestamp(),
         createdBy: userData.id
       }
+      
+      // لا نضيف agentId أو warehouseId لأننا أزلنا دور الوكيل
 
       await setDoc(doc(db, 'users', newUser.email.replace('@', '_').replace('.', '_')), userDoc)
       
@@ -233,20 +233,23 @@ export function UsersManagementPage() {
     if (!userData?.id) return
 
     try {
-      const userRole = ROLES.find(r => r.id === user.role)
-      await updateDoc(doc(db, 'users', user.id), {
+      const userRole = ROLES.find(r => r.name === user.role)
+      
+      const updateData: any = {
         name: user.name,
         email: user.email,
-        phone: user.phone,
+        phone: user.phone || '',
         role: user.role,
-        agentId: user.role === 'agent' ? user.agentId : undefined,
-        warehouseId: user.role === 'agent' ? user.warehouseId : undefined,
-        department: user.department,
+        department: user.department || '',
         permissions: userRole?.permissions || [],
         isActive: user.isActive,
         updatedAt: serverTimestamp(),
         updatedBy: userData.id
-      })
+      }
+      
+      // لا نضيف agentId أو warehouseId لأننا أزلنا دور الوكيل
+      
+      await updateDoc(doc(db, 'users', user.id), updateData)
       
       toast.success('تم تحديث المستخدم بنجاح')
       setEditingUser(null)

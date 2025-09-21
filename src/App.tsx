@@ -45,6 +45,7 @@ function App() {
   
   // Debug notifications
   useEffect(() => {
+    console.log('🚀 NOTIFICATION SYSTEM LOADED - Version 2.0')
     if (notifications.length > 0) {
       console.log('🔔 Notifications received:', notifications.length, 'unread:', unreadCount)
       console.log('📋 Latest notifications:', notifications.slice(0, 3))

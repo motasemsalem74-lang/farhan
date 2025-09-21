@@ -136,13 +136,17 @@ class NotificationSystem {
     items: any[]
   }): Promise<void> {
     try {
+      console.log('📤 notifyNewSale called with data:', saleData)
+      
       // الحصول على قائمة المديرين
       const adminsQuery = query(
         collection(db, 'users'),
         where('role', 'in', ['admin', 'super_admin'])
       )
       
+      console.log('🔍 Querying for admins...')
       const adminsSnapshot = await getDocs(adminsQuery)
+      console.log('👥 Found admins:', adminsSnapshot.size)
       
       // إرسال إشعار لكل مدير
       const promises = adminsSnapshot.docs.map(adminDoc => {

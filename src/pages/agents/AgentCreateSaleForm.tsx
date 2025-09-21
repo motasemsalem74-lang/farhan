@@ -271,6 +271,7 @@ export default function AgentCreateSaleForm({
       })
 
       // إرسال إشعار للمديرين بالبيعة الجديدة
+      console.log('🔔 Attempting to send sale notification...')
       try {
         await sendNewSaleNotification({
           agentId: agent.id,
@@ -285,8 +286,9 @@ export default function AgentCreateSaleForm({
             type: selectedItem.type
           }]
         })
+        console.log('✅ Sale notification sent successfully!')
       } catch (notificationError) {
-        console.error('Failed to send notification:', notificationError)
+        console.error('❌ Failed to send notification:', notificationError)
         // لا نوقف العملية إذا فشل الإشعار
       }
 

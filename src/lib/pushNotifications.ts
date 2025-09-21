@@ -65,9 +65,7 @@ class PushNotificationManager {
     try {
       if (!this.messaging) return null
 
-      const token = await getToken(this.messaging, {
-        vapidKey: 'BKxvxhk5f-nxKVA8fxkJtJ_5YrZQZJZvZQZJZvZQZJZvZQZJZvZQZJZvZQZJZvZQZJZvZQZJZvZQZJZvZQZJZvZQZJZvZQ' // Replace with your VAPID key
-      })
+      const token = await getToken(this.messaging)
 
       if (token) {
         console.log('✅ FCM Token received:', token)

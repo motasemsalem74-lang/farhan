@@ -25,7 +25,7 @@ import { toast } from 'sonner'
 
 import { db, auth } from '@/firebase/firebase-config.template'
 import { Button } from '@/components/ui/Button'
-import { Badge } from '@/components/ui/Badge'
+import { Badge } from '@/components/ui/Badge.tsx'
 import { Input } from '@/components/ui/Input'
 import { Label } from '@/components/ui/Label'
 import { Textarea } from '@/components/ui/textarea'

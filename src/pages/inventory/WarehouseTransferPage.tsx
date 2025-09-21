@@ -158,15 +158,14 @@ export function WarehouseTransferPage() {
       console.log('Current agent balance:', currentBalance)
       
       // Calculate new balance
-      // Positive balance = agent has credit (company owes agent)
+      // Positive balance = agent has credit (company owes agent)  
       // Negative balance = agent has debt (agent owes company)
       let newBalance: number
       if (operation === 'increase') {
-        // Increase debt = make balance more negative (subtract from balance)
-        // But if current balance is positive (credit), we need to reduce it first
+        // Increase debt = agent owes more to company = make balance more negative
         newBalance = currentBalance - amountNumber
       } else {
-        // Decrease debt = make balance less negative (add to balance)
+        // Decrease debt = agent owes less to company = make balance less negative (more positive)
         newBalance = currentBalance + amountNumber
       }
       

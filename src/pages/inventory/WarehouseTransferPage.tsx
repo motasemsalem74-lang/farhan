@@ -13,11 +13,12 @@ import { useAuthState } from 'react-firebase-hooks/auth'
 
 import { db, auth } from '@/firebase/firebase-config.template'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Label } from '@/components/ui/Label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { useUserData } from '@/hooks/useUserData'
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card'
+import { notificationSystem } from '@/lib/notificationSystem'
 import { Warehouse, InventoryItem } from '@/types'
 import { generateTransactionId, getErrorMessage } from '@/lib/utils'
 
@@ -298,20 +299,6 @@ export function WarehouseTransferPage() {
       if (isTransferringFromAgent && isTransferringToAgent && sourceWarehouse?.agentId && targetWarehouse?.agentId) {
         // Transfer between two agents
         console.log('Transferring between agents - updating both debts')
-        
-        // Source agent returns inventory (decrease their debt)
-        console.log('Updating source agent debt - decrease for agent:', sourceWarehouse.agentId)
-        await updateAgentDebt(sourceWarehouse.agentId, totalDebtChange, 'decrease', `إرجاع ${selectedItems.length} موتوسيكل للشركة`)
-        
-        // Target agent receives inventory (increase their debt)
-        console.log('Updating target agent debt - increase for agent:', targetWarehouse.agentId)
-        await updateAgentDebt(targetWarehouse.agentId, totalDebtChange, 'increase', `استلام ${selectedItems.length} موتوسيكل من الشركة`)
-        
-        toast.success(`تم تحويل ${selectedItems.length} صنف بين الوكلاء وتحديث المديونيات`)
-      } else if (isTransferringToAgent && targetWarehouse?.agentId && !sourceWarehouse?.agentId) {
-        // Transferring TO agent from main warehouse - INCREASE debt (agent owes more to company)
-        console.log('Updating agent debt - increase for agent:', targetWarehouse.agentId)
-        await updateAgentDebt(targetWarehouse.agentId, totalDebtChange, 'increase', `تحويل ${selectedItems.length} موتوسيكل للوكيل`)
         toast.success(`تم تحويل ${selectedItems.length} صنف للوكيل وإضافة ${Math.round(totalDebtChange).toLocaleString()} جنيه للمديونية`)
       } else if (isTransferringFromAgent && sourceWarehouse?.agentId && !targetWarehouse?.agentId) {
         // Transferring FROM agent to main warehouse - DECREASE debt (agent owes less to company)

@@ -23,6 +23,9 @@ class PushNotificationManager {
         return
       }
 
+      // Wait for service worker to be ready
+      await navigator.serviceWorker.ready
+      
       this.messaging = getMessaging()
       
       // Request permission and get token

@@ -94,6 +94,8 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
   }
 
   const handleNotificationClick = (notification: NotificationData) => {
+    console.log('🔗 Notification clicked:', notification)
+    
     // Mark as read
     if (notification.status === NotificationStatus.UNREAD) {
       markAsRead(notification.id!)
@@ -102,12 +104,24 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
     // Navigate to action URL if available
     if (notification.actionUrl) {
       console.log('🔗 Navigating to:', notification.actionUrl)
+      console.log('📋 Full notification data:', notification)
+      
       // تأكد من أن الرابط صحيح
       const url = notification.actionUrl.startsWith('/') ? notification.actionUrl : `/${notification.actionUrl}`
-      navigate(url)
-      onClose()
+      console.log('🎯 Final URL:', url)
+      
+      try {
+        navigate(url)
+        onClose()
+        console.log('✅ Navigation successful')
+      } catch (error) {
+        console.error('❌ Navigation failed:', error)
+        // Try window.location as fallback
+        window.location.href = url
+      }
     } else {
       console.log('⚠️ No action URL for notification:', notification.title)
+      console.log('📋 Notification data:', notification)
     }
   }
 

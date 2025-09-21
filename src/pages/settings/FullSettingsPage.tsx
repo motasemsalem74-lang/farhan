@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Settings, Building, Save } from 'lucide-react'
+import { Settings, Building, Save, Download } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -8,6 +8,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { toast } from 'sonner'
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../../firebase/firebase-config.template'
+import { pwaManager } from '@/lib/pwaManager'
 
 // إعدادات النظام البسيطة والعملية
 interface SystemSettings {
@@ -244,6 +245,35 @@ export function FullSettingsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* إعدادات التطبيق */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Download className="h-5 w-5" />
+            إعدادات التطبيق
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+              <div>
+                <h4 className="font-medium text-blue-900">تثبيت التطبيق</h4>
+                <p className="text-sm text-blue-700">ثبت التطبيق على جهازك للوصول السريع</p>
+              </div>
+              <Button
+                onClick={() => pwaManager.installApp()}
+                disabled={!pwaManager.canInstall}
+                variant="outline"
+                size="sm"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {pwaManager.canInstall ? 'تثبيت' : 'مثبت بالفعل'}
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* معاينة الإعدادات */}
       <Card>

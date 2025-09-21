@@ -421,7 +421,7 @@ export function UsersManagementPage() {
                   <tr className="border-b">
                     <th className="text-right p-3">المستخدم</th>
                     <th className="text-right p-3">الدور</th>
-                    <th className="text-right p-3">الوكيل/المخزن</th>
+                    <th className="text-right p-3">القسم</th>
                     <th className="text-right p-3">الحالة</th>
                     <th className="text-right p-3">آخر دخول</th>
                     <th className="text-right p-3">الإجراءات</th>
@@ -458,14 +458,9 @@ export function UsersManagementPage() {
                         </Badge>
                       </td>
                       <td className="p-3">
-                        {user.role === 'agent' && user.agentId ? (
-                          <div className="text-sm">
-                            <p className="font-medium">{getAgentName(user.agentId)}</p>
-                            <p className="text-gray-500">{getWarehouseName(user.warehouseId || '')}</p>
-                          </div>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
+                        <span className="text-sm text-gray-600">
+                          {user.department || '-'}
+                        </span>
                       </td>
                       <td className="p-3">
                         <div className="flex items-center gap-2">
@@ -576,43 +571,7 @@ export function UsersManagementPage() {
                 </select>
               </div>
               
-              {newUser.role === 'agent' && (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="agentId">الوكيل</Label>
-                    <select
-                      id="agentId"
-                      value={newUser.agentId}
-                      onChange={(e) => setNewUser({...newUser, agentId: e.target.value})}
-                      className="w-full p-2 border border-gray-300 rounded-md"
-                    >
-                      <option value="">اختر الوكيل</option>
-                      {agents.map((agent) => (
-                        <option key={agent.id} value={agent.id}>
-                          {agent.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="warehouseId">المخزن</Label>
-                    <select
-                      id="warehouseId"
-                      value={newUser.warehouseId}
-                      onChange={(e) => setNewUser({...newUser, warehouseId: e.target.value})}
-                      className="w-full p-2 border border-gray-300 rounded-md"
-                    >
-                      <option value="">اختر المخزن</option>
-                      {warehouses.map((warehouse) => (
-                        <option key={warehouse.id} value={warehouse.id}>
-                          {warehouse.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </>
-              )}
+              {/* لا نحتاج حقول الوكيل والمخزن لأننا أزلنا دور الوكيل */}
               
               <div className="space-y-2">
                 <Label htmlFor="department">القسم</Label>
@@ -695,43 +654,7 @@ export function UsersManagementPage() {
                 </select>
               </div>
               
-              {editingUser.role === 'agent' && (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-agentId">الوكيل</Label>
-                    <select
-                      id="edit-agentId"
-                      value={editingUser.agentId || ''}
-                      onChange={(e) => setEditingUser({...editingUser, agentId: e.target.value})}
-                      className="w-full p-2 border border-gray-300 rounded-md"
-                    >
-                      <option value="">اختر الوكيل</option>
-                      {agents.map((agent) => (
-                        <option key={agent.id} value={agent.id}>
-                          {agent.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-warehouseId">المخزن</Label>
-                    <select
-                      id="edit-warehouseId"
-                      value={editingUser.warehouseId || ''}
-                      onChange={(e) => setEditingUser({...editingUser, warehouseId: e.target.value})}
-                      className="w-full p-2 border border-gray-300 rounded-md"
-                    >
-                      <option value="">اختر المخزن</option>
-                      {warehouses.map((warehouse) => (
-                        <option key={warehouse.id} value={warehouse.id}>
-                          {warehouse.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </>
-              )}
+              {/* لا نحتاج حقول الوكيل والمخزن لأننا أزلنا دور الوكيل */}
               
               <div className="space-y-2">
                 <Label htmlFor="edit-department">القسم</Label>

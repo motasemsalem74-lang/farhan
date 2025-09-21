@@ -8,7 +8,7 @@ export interface UserRole {
   description: string
 }
 
-// الأدوار الجديدة في النظام - كما طلب المستخدم
+// الأدوار المتاحة للإضافة - بدون دور الوكيل
 export const USER_ROLES: UserRole[] = [
   {
     id: 'super_admin',

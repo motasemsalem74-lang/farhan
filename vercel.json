@@ -10,30 +10,28 @@
       }
     }
   ],
-  "routes": [
+  "rewrites": [
     {
-      "src": "/service-worker.js",
-      "dest": "/service-worker.js",
-      "headers": {
-        "Service-Worker-Allowed": "/"
-      }
-    },
-    {
-      "src": "/manifest.json",
-      "dest": "/manifest.json"
-    },
-    {
-      "src": "/offline.html",
-      "dest": "/offline.html"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/((?!api|_next|_static|favicon.ico|manifest.json|service-worker.js|sw.js|offline.html|.*\\..*).*)",
+      "destination": "/index.html"
     }
   ],
   "headers": [
     {
       "source": "/service-worker.js",
+      "headers": [
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
+    },
+    {
+      "source": "/sw.js",
       "headers": [
         {
           "key": "Service-Worker-Allowed",

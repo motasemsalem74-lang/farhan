@@ -134,28 +134,53 @@ function InventoryList() {
       const brandModelYear = `${item.brand} ${item.model} ${item.manufacturingYear || ''}`.toLowerCase()
       const yearBrandModel = `${item.manufacturingYear || ''} ${item.brand} ${item.model}`.toLowerCase()
       
-      // البحث بطرق متعددة
-      const matchesSearch = 
-        // البحث في النص الكامل
-        fullText.includes(searchTerm) ||
-        // البحث في تركيبة الماركة والموديل
-        brandModel.includes(searchTerm) ||
-        modelBrand.includes(searchTerm) ||
-        // البحث في تركيبة الماركة والموديل والسنة
-        brandModelYear.includes(searchTerm) ||
-        yearBrandModel.includes(searchTerm) ||
-        // البحث بالكلمات المنفصلة (كل الكلمات يجب أن تكون موجودة)
-        searchWords.every(word => fullText.includes(word)) ||
-        // البحث في الحقول المنفردة
-        item.motorFingerprint.toLowerCase().includes(searchTerm) ||
-        item.chassisNumber.toLowerCase().includes(searchTerm) ||
-        item.brand.toLowerCase().includes(searchTerm) ||
-        item.model.toLowerCase().includes(searchTerm) ||
-        (item.manufacturingYear && item.manufacturingYear.toString().includes(searchTerm))
-      
-      if (!matchesSearch) {
-        return false
+      // البحث الدقيق أولاً (تطابق كامل للعبارة)
+      if (fullText.includes(searchTerm) ||
+          brandModel.includes(searchTerm) ||
+          modelBrand.includes(searchTerm) ||
+          brandModelYear.includes(searchTerm) ||
+          yearBrandModel.includes(searchTerm)) {
+        return true
       }
+      
+      // البحث في الحقول المنفردة (تطابق كامل)
+      if (item.motorFingerprint.toLowerCase().includes(searchTerm) ||
+          item.chassisNumber.toLowerCase().includes(searchTerm) ||
+          (item.manufacturingYear && item.manufacturingYear.toString() === searchTerm)) {
+        return true
+      }
+      
+      // البحث بالكلمات المنفصلة فقط إذا كان أكثر من كلمة واحدة
+      if (searchWords.length > 1) {
+        // للبحث بكلمات متعددة، نتأكد من وجود كل كلمة بدقة
+        const allWordsMatch = searchWords.every(word => {
+          return item.brand.toLowerCase() === word ||
+                 item.model.toLowerCase() === word ||
+                 (item.manufacturingYear && item.manufacturingYear.toString() === word) ||
+                 item.motorFingerprint.toLowerCase().includes(word) ||
+                 item.chassisNumber.toLowerCase().includes(word)
+        })
+        
+        if (allWordsMatch) {
+          return true
+        }
+      } else {
+        // للبحث بكلمة واحدة، نبحث تطابق دقيق في الحقول الأساسية
+        const singleWord = searchWords[0]
+        if (item.brand.toLowerCase() === singleWord ||
+            item.model.toLowerCase() === singleWord ||
+            (item.manufacturingYear && item.manufacturingYear.toString() === singleWord)) {
+          return true
+        }
+        
+        // أو تطابق جزئي في الحقول النصية الطويلة فقط
+        if (item.motorFingerprint.toLowerCase().includes(singleWord) ||
+            item.chassisNumber.toLowerCase().includes(singleWord)) {
+          return true
+        }
+      }
+      
+      return false
     }
     if (filters.warehouseId !== 'all' && item.currentWarehouseId !== filters.warehouseId) {
       return false

@@ -1,8 +1,7 @@
 {
-  "version": 2,
   "rewrites": [
     {
-      "source": "/((?!manifest\\.json|service-worker\\.js|sw\\.js|logo-.*\\.png|icon-.*\\.png|screenshot-.*\\.png|favicon\\.ico).*)",
+      "source": "/((?!api|manifest\\.json|service-worker\\.js|sw\\.js|\\.png|\\.jpg|\\.ico|\\.json).*)",
       "destination": "/index.html"
     }
   ],

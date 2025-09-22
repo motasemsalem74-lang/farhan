@@ -12,7 +12,7 @@ import {
   Plus,
   Trash2
 } from 'lucide-react'
-import { addDoc, collection, serverTimestamp, doc, updateDoc, query, where, getDocs } from 'firebase/firestore'
+import { addDoc, collection, serverTimestamp, doc, updateDoc, query, where, getDocs, setDoc } from 'firebase/firestore'
 import { uploadToCloudinary, validateImageFile, compressImage } from '@/lib/cloudinary'
 import { useAuthState } from 'react-firebase-hooks/auth'
 
@@ -110,7 +110,28 @@ export default function CreateSalePage() {
 
   const loadWarehouses = async () => {
     try {
-      // Load warehouses from Firebase
+      console.log('🔄 Loading warehouses from Firebase...')
+      
+      // First, try to load ALL warehouses to see what's in the database
+      console.log('🔍 Loading ALL warehouses first for debugging...')
+      const allWarehousesQuery = query(collection(db, 'warehouses'))
+      const allWarehousesSnapshot = await getDocs(allWarehousesQuery)
+      const allWarehouses = allWarehousesSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }))
+      
+      console.log('📋 ALL warehouses in database:', {
+        total: allWarehouses.length,
+        warehouses: allWarehouses.map(w => ({ 
+          id: w.id, 
+          name: w.name, 
+          type: w.type, 
+          isActive: w.isActive 
+        }))
+      })
+      
+      // Now load only active warehouses
       const warehousesQuery = query(
         collection(db, 'warehouses'),
         where('isActive', '==', true)
@@ -122,16 +143,43 @@ export default function CreateSalePage() {
         ...doc.data()
       })) as Warehouse[]
       
+      console.log('📦 Raw warehouses data:', warehousesData)
+      
+      // If no warehouses found, show detailed error
+      if (warehousesData.length === 0) {
+        console.warn('⚠️ No warehouses found in database!')
+        console.log('🔍 Query details:', {
+          collection: 'warehouses',
+          filter: 'isActive == true',
+          snapshotSize: warehousesSnapshot.size,
+          snapshotEmpty: warehousesSnapshot.empty
+        })
+        toast.error('لم يتم العثور على مخازن نشطة في قاعدة البيانات')
+        return
+      }
+      
       setWarehouses(warehousesData)
       
-      console.log('✅ Loaded warehouses:', {
+      console.log('✅ Loaded warehouses successfully:', {
         total: warehousesData.length,
         nonAgent: warehousesData.filter(w => w.type !== 'agent').length,
-        warehouses: warehousesData.map(w => ({ id: w.id, name: w.name, type: w.type }))
+        warehouses: warehousesData.map(w => ({ id: w.id, name: w.name, type: w.type, isActive: w.isActive }))
       })
+      
+      const nonAgentWarehouses = warehousesData.filter(w => w.type !== 'agent')
+      if (nonAgentWarehouses.length === 0) {
+        console.warn('⚠️ No non-agent warehouses found!')
+        toast.error('لا توجد مخازن متاحة للبيع (جميع المخازن خاصة بالوكلاء)')
+      }
+      
     } catch (error) {
-      console.error('Error loading warehouses:', error)
-      toast.error('خطأ في تحميل المخازن')
+      console.error('❌ Error loading warehouses:', error)
+      console.log('🔍 Error details:', {
+        message: (error as Error).message,
+        code: (error as any).code,
+        stack: (error as Error).stack
+      })
+      toast.error('خطأ في تحميل المخازن: ' + (error as Error).message)
     }
   }
 

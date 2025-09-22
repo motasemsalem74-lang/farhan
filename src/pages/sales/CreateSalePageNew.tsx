@@ -1,23 +1,55 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuthState } from 'react-firebase-hooks/auth'
-import { 
-  collection, 
-  query, 
-  getDocs
-} from 'firebase/firestore'
+import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { 
-  Package, 
-  ArrowLeft
+  Camera, 
+  Save, 
+  ArrowLeft,
+  User,
+  CreditCard,
+  Package,
+  Plus,
+  Trash2
 } from 'lucide-react'
+import { addDoc, collection, serverTimestamp, doc, updateDoc, query, where, getDocs, setDoc } from 'firebase/firestore'
+import { uploadToCloudinary, validateImageFile, compressImage } from '@/lib/cloudinary'
+import { useAuthState } from 'react-firebase-hooks/auth'
 
 import { db, auth } from '@/firebase/firebase-config.template'
 import { Button } from '@/components/ui/Button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Input } from '@/components/ui/Input'
+import { Label } from '@/components/ui/Label'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
+import { ImprovedCameraOCR } from '@/components/ui/ImprovedCameraOCR'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { useUserData } from '@/hooks/useUserData'
-import { Warehouse } from '@/types'
+import { useAuth } from '@/hooks/useAuth'
+import { CreateSaleForm, InventoryItem, Warehouse } from '@/types'
+import { generateTransactionId, getErrorMessage, formatCurrency } from '@/lib/utils'
+import { createCompositeImage } from '@/lib/imageComposer'
+import { extractEgyptianIdCardEnhanced } from '@/lib/enhancedOCR'
+
+interface FormData extends CreateSaleForm {
+  idCardImage?: string
+}
+
+interface ExtractedCustomerData {
+  name?: string
+  nationalId?: string
+  address?: string
+  phone?: string
+  birthDate?: string
+  gender?: string
+}
+
+type OCRStep = 'none' | 'id-card'
+
+interface SaleItem {
+  inventoryItem: InventoryItem
+  salePrice: number
+  commissionPercentage?: number
+}
 
 export default function CreateSalePageNew() {
   console.log('🚨 [NEW PAGE] CreateSalePageNew loaded at:', new Date().toISOString())
@@ -25,8 +57,45 @@ export default function CreateSalePageNew() {
   const navigate = useNavigate()
   const [user] = useAuthState(auth)
   const { userData } = useUserData(user?.uid)
+  const { userData: authUserData } = useAuth()
+  
+  // التحقق من الصلاحيات - الوكلاء لا يمكنهم الوصول لهذه الشاشة
+  useEffect(() => {
+    if (authUserData && authUserData.role === 'agent') {
+      toast.error('الوكلاء لا يمكنهم الوصول لشاشة البيع العامة. يرجى استخدام شاشة البيع الخاصة بالوكيل')
+      navigate('/agents')
+      return
+    }
+  }, [authUserData, navigate])
+  
   const [warehouses, setWarehouses] = useState<Warehouse[]>([])
+  const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>('all')
+  const [availableItems, setAvailableItems] = useState<InventoryItem[]>([])
+  const [selectedItems, setSelectedItems] = useState<SaleItem[]>([])
   const [loading, setLoading] = useState(false)
+  const [itemSearchQuery, setItemSearchQuery] = useState('')
+  const [ocrStep, setOcrStep] = useState<OCRStep>('none')
+  const [extractedCustomerData, setExtractedCustomerData] = useState<ExtractedCustomerData>({})
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting }
+  } = useForm<FormData>({
+    defaultValues: {
+      customer: {
+        name: '',
+        phone: '',
+        address: '',
+        nationalId: ''
+      }
+    }
+  })
+
+  const idCardImage = watch('idCardImage')
+  const customerData = watch('customer')
 
   useEffect(() => {
     console.log('🚨 [NEW PAGE] useEffect triggered, userData:', !!userData)

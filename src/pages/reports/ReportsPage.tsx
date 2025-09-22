@@ -50,7 +50,7 @@ export function ReportsPage() {
   const { userData } = useUserData(user?.uid)
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
-  const [reportData, setReportData] = useState<ComprehensiveReport | null>(null)
+  const [reportData, setReportData] = useState<any>(null)
   const [activeSection, setActiveSection] = useState<'company' | 'agents' | 'comparison'>('company')
   const [filters, setFilters] = useState<AdvancedReportFilters>({
     dateFrom: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -387,9 +387,9 @@ export function ReportsPage() {
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-purple-600 arabic-text">تكلفة البضاعة المباعة</p>
-                        <p className="text-3xl font-bold text-purple-900">{formatCurrency(reportData?.inventory?.totalCost || 0)}</p>
-                        <p className="text-xs text-purple-600 arabic-text mt-1">إجمالي تكلفة الشراء</p>
+                        <p className="text-sm font-medium text-purple-600 arabic-text">قيمة المخزون</p>
+                        <p className="text-3xl font-bold text-purple-900">{formatCurrency(reportData?.inventory?.totalValue || 0)}</p>
+                        <p className="text-xs text-purple-600 arabic-text mt-1">إجمالي قيمة المخزون</p>
                       </div>
                       <div className="p-3 bg-purple-100 rounded-full">
                         <Package className="h-8 w-8 text-purple-600" />
@@ -404,7 +404,7 @@ export function ReportsPage() {
                       <div>
                         <p className="text-sm font-medium text-orange-600 arabic-text">صافي ربح المؤسسة</p>
                         <p className="text-3xl font-bold text-orange-900">
-                          {formatCurrency(((reportData?.sales?.totalAmount || 0) - (reportData?.sales?.totalCommissions || 0)) - (reportData?.inventory?.totalCost || 0))}
+                          {formatCurrency(((reportData?.sales?.totalAmount || 0) - (reportData?.sales?.totalCommissions || 0)) - (reportData?.inventory?.totalValue || 0))}
                         </p>
                         <p className="text-xs text-orange-600 arabic-text mt-1">الربح النهائي للمؤسسة</p>
                       </div>

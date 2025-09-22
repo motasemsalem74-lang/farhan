@@ -54,7 +54,9 @@ import {
   updateDoc, 
   deleteDoc, 
   setDoc, 
-  serverTimestamp
+  serverTimestamp,
+  query,
+  where
 } from 'firebase/firestore'
 import { updatePassword, getAuth } from 'firebase/auth'
 import { db } from '../../firebase/firebase-config.template'
@@ -194,7 +196,16 @@ export function UsersManagementPage() {
       setCreating(true)
       console.log('🔐 Creating Firebase Auth user...')
       
-      // إنشاء المستخدم في Firebase Auth
+      // Check if user already exists
+      const existingUsersQuery = query(collection(db, 'users'), where('email', '==', newUser.email))
+      const existingUsersSnapshot = await getDocs(existingUsersQuery)
+      
+      if (!existingUsersSnapshot.empty) {
+        toast.error('يوجد مستخدم بهذا البريد الإلكتروني بالفعل')
+        return
+      }
+      
+      // Create Firebase Auth user
       const userCredential = await createUserWithEmailAndPassword(auth, newUser.email, newUser.password)
       const firebaseUser = userCredential.user
       

@@ -110,35 +110,58 @@ export default function CreateSalePage() {
 
   const loadWarehouses = async () => {
     try {
-      console.log('🏪 [SALES CREATE] Loading warehouses...')
+      console.log('🏪 [SALES CREATE] Loading institution warehouses...')
       
-      // استخدام نفس منطق CompanySalesPage - بسيط وفعال
-      const warehousesQuery = query(
-        collection(db, 'warehouses'),
-        where('agentId', '==', null) // مخازن الشركة فقط (ليس للوكلاء)
-      )
-      
+      // تحميل جميع المخازن
+      const warehousesQuery = query(collection(db, 'warehouses'))
       const warehousesSnapshot = await getDocs(warehousesQuery)
-      const warehousesData = warehousesSnapshot.docs.map(doc => ({
+      const allWarehouses = warehousesSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Warehouse[]
       
-      console.log('🏪 [SALES CREATE] Company warehouses found:', warehousesData.length)
-      console.log('🏪 [SALES CREATE] Warehouses:', warehousesData.map(w => ({
+      console.log('🏪 [SALES CREATE] ALL warehouses in database:', allWarehouses.length)
+      console.log('🏪 [SALES CREATE] All warehouses details:', allWarehouses.map(w => ({
         id: w.id,
         name: w.name,
         type: w.type
       })))
       
-      setWarehouses(warehousesData)
+      // فلترة مخازن المؤسسة فقط - المخزن الرئيسي ومخزن المعرض
+      const institutionWarehouses = allWarehouses.filter(w => {
+        const name = w.name?.toLowerCase() || ''
+        const type = w.type?.toLowerCase() || ''
+        
+        return (
+          // حسب النوع
+          type === 'main' || 
+          type === 'showroom' ||
+          type === 'institution' ||
+          // حسب الاسم
+          name.includes('رئيسي') || 
+          name.includes('معرض') ||
+          name.includes('الرئيسي') ||
+          name.includes('المعرض') ||
+          name.includes('مؤسسة') ||
+          name.includes('المؤسسة')
+        )
+      })
       
-      if (warehousesData.length === 0) {
-        toast.error('لا توجد مخازن شركة متاحة')
-        console.warn('🏪 [SALES CREATE] No company warehouses found')
+      console.log('🏪 [SALES CREATE] Institution warehouses found:', institutionWarehouses.length)
+      console.log('🏪 [SALES CREATE] Institution warehouses:', institutionWarehouses.map(w => ({
+        id: w.id,
+        name: w.name,
+        type: w.type
+      })))
+      
+      setWarehouses(institutionWarehouses)
+      
+      if (institutionWarehouses.length === 0) {
+        toast.error('لا توجد مخازن مؤسسة متاحة (المخزن الرئيسي أو مخزن المعرض)')
+        console.warn('🏪 [SALES CREATE] No institution warehouses found')
       } else {
-        toast.success(`تم تحميل ${warehousesData.length} مخزن`)
-        console.log('🏪 [SALES CREATE] Warehouses loaded successfully')
+        toast.success(`تم تحميل ${institutionWarehouses.length} مخزن مؤسسة`)
+        console.log('🏪 [SALES CREATE] Institution warehouses loaded successfully')
       }
       
     } catch (error) {
@@ -149,7 +172,9 @@ export default function CreateSalePage() {
 
   const loadAvailableItems = async () => {
     try {
-      // Load items from main warehouse and showroom only
+      console.log('📦 [SALES CREATE] Loading available items from institution warehouses...')
+      
+      // تحميل جميع الأصناف المتاحة
       const inventoryQuery = query(
         collection(db, 'inventory_items'),
         where('status', '==', 'available')
@@ -161,80 +186,34 @@ export default function CreateSalePage() {
         ...doc.data()
       })) as InventoryItem[]
       
-      // Get warehouses to filter by type
-      const warehousesQuery = query(
-        collection(db, 'warehouses'),
-        where('isActive', '==', true)
-      )
-      const warehousesSnapshot = await getDocs(warehousesQuery)
-      const warehousesData = warehousesSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Warehouse[]
+      console.log('📦 [SALES CREATE] Total available items in database:', allItems.length)
       
-      // Filter items from main warehouse and showroom only
-      const mainAndShowroomWarehouses = warehousesData.filter(w => {
-        const name = w.name?.toLowerCase() || ''
-        const type = w.type?.toLowerCase() || ''
-        
-        return (
-          // Check by type
-          type === 'main' || 
-          type === 'showroom' ||
-          type === 'institution' ||
-          // Check by name (Arabic)
-          name.includes('رئيسي') || 
-          name.includes('معرض') ||
-          name.includes('الرئيسي') ||
-          name.includes('المعرض') ||
-          name.includes('مؤسسة') ||
-          name.includes('المؤسسة') ||
-          // Check by name (English)
-          name.includes('main') ||
-          name.includes('showroom') ||
-          name.includes('institution') ||
-          name.includes('company')
-        )
+      // فلترة الأصناف من مخازن المؤسسة فقط (استخدام المخازن المحملة مسبقاً)
+      const institutionWarehouseIds = warehouses.map(w => w.id)
+      
+      const institutionItems = allItems.filter(item => 
+        institutionWarehouseIds.includes(item.currentWarehouseId)
+      )
+      
+      console.log('📦 [SALES CREATE] Items from institution warehouses:', {
+        totalItems: allItems.length,
+        institutionWarehouses: warehouses.length,
+        institutionWarehouseIds,
+        institutionItems: institutionItems.length
       })
       
-      const warehouseIds = mainAndShowroomWarehouses.map(w => w.id)
+      setAvailableItems(institutionItems)
       
-      let filteredItems = allItems.filter(item => 
-        warehouseIds.includes(item.currentWarehouseId)
-      )
-      
-      // If no items found in main/showroom warehouses, don't show agent items
-      if (filteredItems.length === 0 && allItems.length > 0) {
-        console.warn('⚠️ No items found in main/showroom warehouses')
-        
-        // Only show items from non-agent warehouses as fallback
-        const nonAgentWarehouses = warehousesData.filter(w => w.type !== 'agent')
-        const nonAgentWarehouseIds = nonAgentWarehouses.map(w => w.id)
-        
-        const nonAgentItems = allItems.filter(item => 
-          nonAgentWarehouseIds.includes(item.currentWarehouseId)
-        )
-        
-        if (nonAgentItems.length > 0) {
-          filteredItems = nonAgentItems
-          console.log('🔄 Using fallback - showing items from non-agent warehouses only:', nonAgentItems.length)
-        } else {
-          console.log('❌ No items available in any non-agent warehouse')
-        }
+      if (institutionItems.length === 0) {
+        console.warn('📦 [SALES CREATE] No items found in institution warehouses')
+        toast.error('لا توجد أصناف متاحة في مخازن المؤسسة')
+      } else {
+        console.log('📦 [SALES CREATE] Items loaded successfully from institution warehouses')
+        toast.success(`تم تحميل ${institutionItems.length} صنف من مخازن المؤسسة`)
       }
       
-      console.log('✅ Loaded items from main/showroom warehouses:', {
-        totalItems: allItems.length,
-        mainShowroomWarehouses: mainAndShowroomWarehouses.length,
-        filteredItems: filteredItems.length,
-        warehouseIds
-      })
-      
-      setAvailableItems(filteredItems)
-      setWarehouses(warehousesData)
-      
     } catch (error) {
-      console.error('Error loading available items:', error)
+      console.error('📦 [SALES CREATE] Error loading available items:', error)
       toast.error('خطأ في تحميل المنتجات المتاحة')
     }
   }

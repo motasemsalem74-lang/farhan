@@ -123,12 +123,33 @@ function InventoryList() {
   }
 
   const filteredInventory = inventory.filter(item => {
-    if (filters.search && 
-        !item.motorFingerprint.toLowerCase().includes(filters.search.toLowerCase()) &&
-        !item.chassisNumber.toLowerCase().includes(filters.search.toLowerCase()) &&
-        !item.brand.toLowerCase().includes(filters.search.toLowerCase()) &&
-        !item.model.toLowerCase().includes(filters.search.toLowerCase())) {
-      return false
+    if (filters.search) {
+      const searchTerm = filters.search.toLowerCase().trim()
+      const searchWords = searchTerm.split(' ').filter(word => word.length > 0)
+      
+      // النص الكامل للبحث فيه
+      const fullText = `${item.brand} ${item.model} ${item.motorFingerprint} ${item.chassisNumber}`.toLowerCase()
+      const brandModel = `${item.brand} ${item.model}`.toLowerCase()
+      const modelBrand = `${item.model} ${item.brand}`.toLowerCase()
+      
+      // البحث بطرق متعددة
+      const matchesSearch = 
+        // البحث في النص الكامل
+        fullText.includes(searchTerm) ||
+        // البحث في تركيبة الماركة والموديل
+        brandModel.includes(searchTerm) ||
+        modelBrand.includes(searchTerm) ||
+        // البحث بالكلمات المنفصلة (كل الكلمات يجب أن تكون موجودة)
+        searchWords.every(word => fullText.includes(word)) ||
+        // البحث في الحقول المنفردة
+        item.motorFingerprint.toLowerCase().includes(searchTerm) ||
+        item.chassisNumber.toLowerCase().includes(searchTerm) ||
+        item.brand.toLowerCase().includes(searchTerm) ||
+        item.model.toLowerCase().includes(searchTerm)
+      
+      if (!matchesSearch) {
+        return false
+      }
     }
     if (filters.warehouseId !== 'all' && item.currentWarehouseId !== filters.warehouseId) {
       return false
@@ -211,11 +232,14 @@ function InventoryList() {
             <div className="lg:col-span-2">
               <Input
                 type="text"
-                placeholder="البحث في المخزون..."
+                placeholder="البحث: ماركة، موديل، رقم محرك، شاسيه (مثال: هوجن 3)"
                 value={filters.search}
                 onChange={(e) => handleFilterChange('search', e.target.value)}
                 className="w-full"
               />
+              <p className="text-xs text-gray-500 mt-1 arabic-text">
+                يمكنك البحث بـ "هوجن 3" أو "3 هوجن" أو "هوجن" أو "3" منفردة
+              </p>
             </div>
 
             {/* Warehouse Filter */}

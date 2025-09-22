@@ -255,9 +255,12 @@ class PWAManager {
       description: 'ثبت التطبيق على جهازك للوصول السريع والعمل بدون إنترنت',
       action: {
         label: '⬇️ تثبيت الآن',
-        onClick: () => this.installApp()
+        onClick: async () => {
+          console.log('🔧 PWA: Install button clicked from banner')
+          await this.installApp()
+        }
       },
-      duration: 25000, // 25 ثانية
+      duration: 30000, // 30 ثانية
       position: 'top-center'
     })
   }
@@ -287,25 +290,43 @@ class PWAManager {
    * تثبيت التطبيق
    */
   public async installApp(): Promise<boolean> {
+    console.log('🔧 PWA: Install app called', { hasPrompt: !!this.installPrompt })
+    
     if (!this.installPrompt) {
-      toast.warning('التثبيت غير متاح حالياً')
+      // إذا لم يكن هناك prompt، اعرض تعليمات التثبيت اليدوي
+      console.log('📱 PWA: No install prompt available, showing manual instructions')
+      this.showInstallInstructions()
       return false
     }
 
     try {
+      console.log('📱 PWA: Triggering install prompt')
       await this.installPrompt.prompt()
       const { outcome } = await this.installPrompt.userChoice
       
+      console.log('📱 PWA: User choice:', outcome)
+      
       if (outcome === 'accepted') {
-        toast.success('جاري تثبيت التطبيق...')
+        toast.success('🎉 جاري تثبيت التطبيق...', {
+          description: 'سيتم فتح التطبيق من الشاشة الرئيسية قريباً'
+        })
+        this.installPrompt = null // مسح الـ prompt بعد الاستخدام
         return true
       } else {
-        toast.info('تم إلغاء التثبيت')
+        toast.info('تم إلغاء التثبيت', {
+          description: 'يمكنك تثبيت التطبيق لاحقاً من الإعدادات'
+        })
         return false
       }
     } catch (error) {
       console.error('❌ PWA: Install failed', error)
-      toast.error('فشل في تثبيت التطبيق')
+      toast.error('فشل في تثبيت التطبيق', {
+        description: 'جرب استخدام قائمة المتصفح للتثبيت'
+      })
+      // في حالة الفشل، اعرض التعليمات اليدوية
+      setTimeout(() => {
+        this.showInstallInstructions()
+      }, 2000)
       return false
     }
   }

@@ -106,6 +106,7 @@ export function CustomerInquiryPage() {
   const [customers, setCustomers] = useState<CustomerDetails[]>([])
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerDetails | null>(null)
   const [showDetails, setShowDetails] = useState(false)
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
 
   const searchCustomers = async () => {
     if (!searchTerm.trim()) {
@@ -255,6 +256,167 @@ export function CustomerInquiryPage() {
       default:
         return <Badge className="bg-gray-100 text-gray-800">{status || 'غير محدد'}</Badge>
     }
+  }
+
+  // دوال الإجراءات
+  const handleViewSaleDetails = (sale: CustomerSale) => {
+    // فتح صفحة تفاصيل البيع
+    window.open(`/sales/details/${sale.id}`, '_blank')
+  }
+
+  const handlePrintInvoice = (sale: CustomerSale) => {
+    // طباعة الفاتورة
+    const printWindow = window.open('', '_blank')
+    if (printWindow) {
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html dir="rtl" lang="ar">
+        <head>
+          <meta charset="UTF-8">
+          <title>فاتورة بيع - ${sale.customerName}</title>
+          <style>
+            body { font-family: Arial, sans-serif; direction: rtl; text-align: right; }
+            .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 20px; }
+            .info { margin: 10px 0; }
+            .label { font-weight: bold; }
+            .footer { margin-top: 30px; text-align: center; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>فاتورة بيع</h1>
+            <h2>مؤسسة أبو فرحان للنقل الخفيف</h2>
+          </div>
+          <div class="info"><span class="label">اسم العميل:</span> ${sale.customerName}</div>
+          <div class="info"><span class="label">رقم الهاتف:</span> ${sale.customerPhone}</div>
+          <div class="info"><span class="label">الرقم القومي:</span> ${sale.customerNationalId}</div>
+          <div class="info"><span class="label">العنوان:</span> ${sale.customerAddress}</div>
+          <div class="info"><span class="label">نوع المركبة:</span> ${sale.motorBrand} ${sale.motorModel}</div>
+          <div class="info"><span class="label">رقم الشاسيه:</span> ${sale.chassisNumber}</div>
+          <div class="info"><span class="label">رقم المحرك:</span> ${sale.motorFingerprint}</div>
+          <div class="info"><span class="label">سعر البيع:</span> ${formatCurrency(typeof sale.salePrice === 'string' ? parseFloat(sale.salePrice) || 0 : (sale.salePrice || 0))}</div>
+          <div class="info"><span class="label">اسم الوكيل:</span> ${sale.agentName}</div>
+          <div class="info"><span class="label">تاريخ البيع:</span> ${formatDate(sale.createdAt)}</div>
+          <div class="footer">
+            <p>شكراً لتعاملكم معنا</p>
+            <p>تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG')}</p>
+          </div>
+        </body>
+        </html>
+      `)
+      printWindow.document.close()
+      printWindow.print()
+    }
+  }
+
+  const handleDownloadImages = async (sale: CustomerSale) => {
+    try {
+      const images = []
+      if (sale.motorFingerprintImageUrl) images.push({ url: sale.motorFingerprintImageUrl, name: 'motor-fingerprint.jpg' })
+      if (sale.chassisNumberImageUrl) images.push({ url: sale.chassisNumberImageUrl, name: 'chassis-number.jpg' })
+      if (sale.customerIdImageUrl) images.push({ url: sale.customerIdImageUrl, name: 'customer-id.jpg' })
+      
+      if (images.length === 0) {
+        toast.info('لا توجد صور متاحة للتحميل')
+        return
+      }
+
+      for (const image of images) {
+        try {
+          const response = await fetch(image.url)
+          const blob = await response.blob()
+          const url = window.URL.createObjectURL(blob)
+          const link = document.createElement('a')
+          link.href = url
+          link.download = `${sale.customerName}-${image.name}`
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          window.URL.revokeObjectURL(url)
+        } catch (error) {
+          console.error('Error downloading image:', error)
+        }
+      }
+      
+      toast.success(`تم تحميل ${images.length} صورة`)
+    } catch (error) {
+      console.error('Error downloading images:', error)
+      toast.error('حدث خطأ أثناء تحميل الصور')
+    }
+  }
+
+  const handleCreateNewSale = () => {
+    if (!selectedCustomer) return
+    
+    // الانتقال لصفحة بيع جديد مع بيانات العميل المحددة مسبقاً
+    const customerData = {
+      name: selectedCustomer.name,
+      phone: selectedCustomer.phone,
+      nationalId: selectedCustomer.nationalId,
+      address: selectedCustomer.address
+    }
+    
+    // حفظ بيانات العميل في localStorage للاستخدام في صفحة البيع الجديد
+    localStorage.setItem('prefilledCustomer', JSON.stringify(customerData))
+    
+    // فتح صفحة بيع جديد
+    window.open('/sales/new', '_blank')
+    toast.success('تم فتح صفحة بيع جديد مع بيانات العميل')
+  }
+
+  const handleExportCustomerData = () => {
+    if (!selectedCustomer) return
+
+    try {
+      const exportData = {
+        customerInfo: {
+          name: selectedCustomer.name,
+          phone: selectedCustomer.phone,
+          nationalId: selectedCustomer.nationalId,
+          address: selectedCustomer.address,
+          totalPurchases: selectedCustomer.totalPurchases,
+          totalSpent: selectedCustomer.totalSpent,
+          lastPurchaseDate: formatDate(selectedCustomer.lastPurchaseDate)
+        },
+        salesHistory: selectedCustomer.sales.map(sale => ({
+          date: formatDate(sale.createdAt),
+          motorBrand: sale.motorBrand,
+          motorModel: sale.motorModel,
+          chassisNumber: sale.chassisNumber,
+          motorFingerprint: sale.motorFingerprint,
+          salePrice: typeof sale.salePrice === 'string' ? parseFloat(sale.salePrice) || 0 : (sale.salePrice || 0),
+          agentName: sale.agentName,
+          status: sale.status
+        }))
+      }
+
+      const dataStr = JSON.stringify(exportData, null, 2)
+      const dataBlob = new Blob([dataStr], { type: 'application/json' })
+      const url = URL.createObjectURL(dataBlob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `customer-data-${selectedCustomer.name}-${new Date().toISOString().split('T')[0]}.json`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+      
+      toast.success('تم تصدير بيانات العميل بنجاح')
+    } catch (error) {
+      console.error('Error exporting customer data:', error)
+      toast.error('حدث خطأ أثناء تصدير البيانات')
+    }
+  }
+
+  const handleCallCustomer = () => {
+    if (!selectedCustomer?.phone) {
+      toast.error('رقم الهاتف غير متاح')
+      return
+    }
+    
+    // فتح تطبيق الهاتف
+    window.location.href = `tel:${selectedCustomer.phone}`
+    toast.info(`جاري الاتصال بـ ${selectedCustomer.name}`)
   }
 
   return (
@@ -445,7 +607,8 @@ export function CustomerInquiryPage() {
                       <img 
                         src={selectedCustomer.idImageUrl} 
                         alt="صورة الهوية" 
-                        className="mt-2 max-w-xs rounded-lg shadow-md"
+                        className="mt-2 max-w-xs rounded-lg shadow-md cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => setSelectedImage(selectedCustomer.idImageUrl!)}
                       />
                     </div>
                   )}
@@ -548,14 +711,16 @@ export function CustomerInquiryPage() {
                                   <img 
                                     src={sale.motorFingerprintImageUrl} 
                                     alt="صورة المحرك" 
-                                    className="w-full h-16 object-cover rounded border"
+                                    className="w-full h-16 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
+                                    onClick={() => setSelectedImage(sale.motorFingerprintImageUrl!)}
                                   />
                                 )}
                                 {sale.chassisNumberImageUrl && (
                                   <img 
                                     src={sale.chassisNumberImageUrl} 
                                     alt="رقم الشاسيه" 
-                                    className="w-full h-16 object-cover rounded border"
+                                    className="w-full h-16 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
+                                    onClick={() => setSelectedImage(sale.chassisNumberImageUrl!)}
                                   />
                                 )}
                               </div>
@@ -565,15 +730,30 @@ export function CustomerInquiryPage() {
                             <div className="space-y-2">
                               <h4 className="font-semibold text-gray-900 arabic-text">الإجراءات</h4>
                               <div className="space-y-2">
-                                <Button variant="outline" size="sm" className="w-full">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="w-full"
+                                  onClick={() => handleViewSaleDetails(sale)}
+                                >
                                   <Eye className="ml-2 h-4 w-4" />
                                   عرض التفاصيل
                                 </Button>
-                                <Button variant="outline" size="sm" className="w-full">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="w-full"
+                                  onClick={() => handlePrintInvoice(sale)}
+                                >
                                   <FileText className="ml-2 h-4 w-4" />
                                   طباعة الفاتورة
                                 </Button>
-                                <Button variant="outline" size="sm" className="w-full">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="w-full"
+                                  onClick={() => handleDownloadImages(sale)}
+                                >
                                   <Download className="ml-2 h-4 w-4" />
                                   تحميل الصور
                                 </Button>
@@ -597,15 +777,24 @@ export function CustomerInquiryPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Button className="bg-blue-600 hover:bg-blue-700">
+                    <Button 
+                      className="bg-blue-600 hover:bg-blue-700"
+                      onClick={handleCreateNewSale}
+                    >
                       <FileText className="ml-2 h-4 w-4" />
                       إنشاء بيع جديد
                     </Button>
-                    <Button variant="outline">
+                    <Button 
+                      variant="outline"
+                      onClick={handleExportCustomerData}
+                    >
                       <Download className="ml-2 h-4 w-4" />
                       تصدير بيانات العميل
                     </Button>
-                    <Button variant="outline">
+                    <Button 
+                      variant="outline"
+                      onClick={handleCallCustomer}
+                    >
                       <Phone className="ml-2 h-4 w-4" />
                       الاتصال بالعميل
                     </Button>
@@ -613,6 +802,27 @@ export function CustomerInquiryPage() {
                 </CardContent>
               </Card>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Image Viewer Modal */}
+      {selectedImage && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
+          <div className="relative max-w-4xl max-h-[90vh] w-full h-full flex items-center justify-center">
+            <img 
+              src={selectedImage} 
+              alt="صورة مكبرة" 
+              className="max-w-full max-h-full object-contain rounded-lg"
+            />
+            <Button 
+              variant="outline" 
+              size="sm"
+              className="absolute top-4 right-4 bg-white hover:bg-gray-100"
+              onClick={() => setSelectedImage(null)}
+            >
+              <XCircle className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       )}

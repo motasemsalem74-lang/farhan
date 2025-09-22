@@ -223,17 +223,28 @@ class PWAManager {
       return
     }
 
-    // إذا لم يكن متاحاً، اعرض نافذة تأكيد ثم التعليمات
-    const userWantsInstructions = confirm(
-      'تطبيق الفرحان جاهز للتثبيت!\n\n' +
-      'هل تريد رؤية تعليمات التثبيت؟\n\n' +
-      '✅ اضغط "موافق" لرؤية التعليمات\n' +
-      '❌ اضغط "إلغاء" للمتابعة بدون تثبيت'
-    )
+    // للمتصفحات الأخرى، اعرض رسالة سريعة مع تعليمات مبسطة
+    console.log('📱 PWA: No install prompt, showing quick instructions')
     
-    if (userWantsInstructions) {
-      this.showInstallInstructions()
+    const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor)
+    const isEdge = /Edg/.test(navigator.userAgent)
+    const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent)
+    
+    let quickInstructions = ''
+    
+    if (isChrome || isEdge) {
+      quickInstructions = 'اضغط على الثلاث نقاط (⋮) في أعلى المتصفح ← اختر "تثبيت التطبيق"'
+    } else if (isSafari) {
+      quickInstructions = 'اضغط على زر المشاركة (📤) ← اختر "إضافة إلى الشاشة الرئيسية"'
+    } else {
+      quickInstructions = 'ابحث عن خيار "تثبيت التطبيق" في قائمة المتصفح'
     }
+    
+    toast.info('📖 كيفية تثبيت التطبيق', {
+      description: quickInstructions,
+      duration: 10000,
+      position: 'top-center'
+    })
   }
 
   /**

@@ -196,17 +196,43 @@ class PWAManager {
     const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent)
     
     if (isChrome || isEdge || isSafari) {
-      console.log('📱 PWA: Showing generic install prompt')
+      console.log('📱 PWA: Showing generic install prompt with direct install button')
       
-      toast.info('📱 يمكن تثبيت تطبيق الفرحان!', {
-        description: 'استخدم قائمة المتصفح لتثبيت التطبيق على جهازك',
+      toast.info('📱 تطبيق الفرحان متاح للتثبيت!', {
+        description: 'ثبت التطبيق على جهازك للوصول السريع والعمل بدون إنترنت',
         action: {
-          label: '📖 كيفية التثبيت',
-          onClick: () => this.showInstallInstructions()
+          label: '⬇️ تثبيت الآن',
+          onClick: () => this.handleManualInstall()
         },
-        duration: 20000,
+        duration: 25000,
         position: 'top-center'
       })
+    }
+  }
+
+  /**
+   * معالجة التثبيت اليدوي - يحاول التثبيت المباشر أو يعرض التعليمات
+   */
+  private handleManualInstall(): void {
+    console.log('🔧 PWA: Handle manual install called')
+    
+    // أولاً جرب التثبيت المباشر إذا كان متاحاً
+    if (this.installPrompt) {
+      console.log('📱 PWA: Install prompt available, using direct install')
+      this.installApp()
+      return
+    }
+
+    // إذا لم يكن متاحاً، اعرض نافذة تأكيد ثم التعليمات
+    const userWantsInstructions = confirm(
+      'تطبيق الفرحان جاهز للتثبيت!\n\n' +
+      'هل تريد رؤية تعليمات التثبيت؟\n\n' +
+      '✅ اضغط "موافق" لرؤية التعليمات\n' +
+      '❌ اضغط "إلغاء" للمتابعة بدون تثبيت'
+    )
+    
+    if (userWantsInstructions) {
+      this.showInstallInstructions()
     }
   }
 

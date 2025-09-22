@@ -111,6 +111,8 @@ export default function CreateSalePage() {
   const loadWarehouses = async () => {
     try {
       console.log('🏪 [SALES CREATE] Loading institution warehouses...')
+      console.log('🚨 [FORCE UPDATE] Code updated at:', new Date().toISOString())
+      console.log('🚨 [FORCE UPDATE] This message confirms the latest code is running!')
       
       // تحميل جميع المخازن
       const warehousesQuery = query(collection(db, 'warehouses'))

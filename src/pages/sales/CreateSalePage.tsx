@@ -110,7 +110,8 @@ export default function CreateSalePage() {
 
   const loadWarehouses = async () => {
     try {
-      console.log('🔄 Loading warehouses from Firebase...')
+      console.log('🔄 [WAREHOUSE FIX] Loading warehouses from Firebase...')
+      console.log('🔄 [WAREHOUSE FIX] Current timestamp:', new Date().toISOString())
       
       // First, try to load ALL warehouses to see what's in the database
       console.log('🔍 Loading ALL warehouses first for debugging...')

@@ -358,7 +358,7 @@ export function ReportsPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm font-medium text-green-600 arabic-text">إجمالي المبيعات</p>
-                        <p className="text-3xl font-bold text-green-900">{reportData?.sales?.totalSales || 0}</p>
+                        <p className="text-3xl font-bold text-green-900">{reportData?.sales?.summary?.totalSales || reportData?.overview?.totalSales || 0}</p>
                         <p className="text-xs text-green-600 arabic-text mt-1">عدد الفواتير المباعة</p>
                       </div>
                       <div className="p-3 bg-green-100 rounded-full">
@@ -373,7 +373,7 @@ export function ReportsPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm font-medium text-blue-600 arabic-text">إيرادات المؤسسة</p>
-                        <p className="text-3xl font-bold text-blue-900">{formatCurrency((reportData?.sales?.totalAmount || 0) - (reportData?.sales?.totalCommissions || 0))}</p>
+                        <p className="text-3xl font-bold text-blue-900">{formatCurrency((reportData?.sales?.summary?.totalAmount || reportData?.overview?.totalRevenue || 0) - (reportData?.sales?.summary?.agentCommissions || 0))}</p>
                         <p className="text-xs text-blue-600 arabic-text mt-1">بعد خصم عمولات الوكلاء</p>
                       </div>
                       <div className="p-3 bg-blue-100 rounded-full">
@@ -388,7 +388,7 @@ export function ReportsPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm font-medium text-purple-600 arabic-text">قيمة المخزون</p>
-                        <p className="text-3xl font-bold text-purple-900">{formatCurrency(reportData?.inventory?.totalValue || 0)}</p>
+                        <p className="text-3xl font-bold text-purple-900">{formatCurrency(reportData?.inventory?.summary?.totalValue || reportData?.overview?.inventoryValue || 0)}</p>
                         <p className="text-xs text-purple-600 arabic-text mt-1">إجمالي قيمة المخزون</p>
                       </div>
                       <div className="p-3 bg-purple-100 rounded-full">
@@ -404,7 +404,7 @@ export function ReportsPage() {
                       <div>
                         <p className="text-sm font-medium text-orange-600 arabic-text">صافي ربح المؤسسة</p>
                         <p className="text-3xl font-bold text-orange-900">
-                          {formatCurrency(((reportData?.sales?.totalAmount || 0) - (reportData?.sales?.totalCommissions || 0)) - (reportData?.inventory?.totalValue || 0))}
+                          {formatCurrency(reportData?.overview?.totalProfit || reportData?.sales?.summary?.totalProfit || 0)}
                         </p>
                         <p className="text-xs text-orange-600 arabic-text mt-1">الربح النهائي للمؤسسة</p>
                       </div>
@@ -436,7 +436,7 @@ export function ReportsPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm font-medium text-blue-600 arabic-text">إجمالي الوكلاء</p>
-                        <p className="text-3xl font-bold text-blue-900">{reportData?.agents?.totalAgents || 0}</p>
+                        <p className="text-3xl font-bold text-blue-900">{reportData?.agents?.summary?.totalAgents || reportData?.overview?.activeAgents || 0}</p>
                         <p className="text-xs text-blue-600 arabic-text mt-1">عدد الوكلاء المسجلين</p>
                       </div>
                       <div className="p-3 bg-blue-100 rounded-full">
@@ -451,7 +451,7 @@ export function ReportsPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm font-medium text-green-600 arabic-text">الوكلاء النشطون</p>
-                        <p className="text-3xl font-bold text-green-900">{reportData?.agents?.activeAgents || 0}</p>
+                        <p className="text-3xl font-bold text-green-900">{reportData?.agents?.summary?.activeAgents || reportData?.overview?.activeAgents || 0}</p>
                         <p className="text-xs text-green-600 arabic-text mt-1">وكلاء لديهم مبيعات</p>
                       </div>
                       <div className="p-3 bg-green-100 rounded-full">
@@ -466,7 +466,7 @@ export function ReportsPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm font-medium text-purple-600 arabic-text">إجمالي العمولات</p>
-                        <p className="text-3xl font-bold text-purple-900">{formatCurrency(reportData?.agents?.totalCommissions || 0)}</p>
+                        <p className="text-3xl font-bold text-purple-900">{formatCurrency(reportData?.sales?.summary?.agentCommissions || 0)}</p>
                         <p className="text-xs text-purple-600 arabic-text mt-1">عمولات مستحقة للوكلاء</p>
                       </div>
                       <div className="p-3 bg-purple-100 rounded-full">
@@ -481,7 +481,7 @@ export function ReportsPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm font-medium text-red-600 arabic-text">إجمالي المديونية</p>
-                        <p className="text-3xl font-bold text-red-900">{formatCurrency(reportData?.agents?.totalDebt || 0)}</p>
+                        <p className="text-3xl font-bold text-red-900">{formatCurrency(reportData?.agents?.summary?.totalDebt || 0)}</p>
                         <p className="text-xs text-red-600 arabic-text mt-1">مبالغ مستحقة على الوكلاء</p>
                       </div>
                       <div className="p-3 bg-red-100 rounded-full">
@@ -518,11 +518,11 @@ export function ReportsPage() {
                     <div className="space-y-4">
                       <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
                         <span className="text-blue-700 arabic-text">صافي إيرادات المؤسسة</span>
-                        <span className="font-bold text-blue-900">{formatCurrency((reportData?.sales?.totalAmount || 0) - (reportData?.sales?.totalCommissions || 0))}</span>
+                        <span className="font-bold text-blue-900">{formatCurrency((reportData?.sales?.summary?.totalAmount || reportData?.overview?.totalRevenue || 0) - (reportData?.sales?.summary?.agentCommissions || 0))}</span>
                       </div>
                       <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
                         <span className="text-green-700 arabic-text">صافي الربح</span>
-                        <span className="font-bold text-green-900">{formatCurrency(((reportData?.sales?.totalAmount || 0) - (reportData?.sales?.totalCommissions || 0)) - (reportData?.inventory?.totalCost || 0))}</span>
+                        <span className="font-bold text-green-900">{formatCurrency(reportData?.overview?.totalProfit || reportData?.sales?.summary?.totalProfit || 0)}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -539,11 +539,11 @@ export function ReportsPage() {
                     <div className="space-y-4">
                       <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
                         <span className="text-green-700 arabic-text">إجمالي العمولات</span>
-                        <span className="font-bold text-green-900">{formatCurrency(reportData?.agents?.totalCommissions || 0)}</span>
+                        <span className="font-bold text-green-900">{formatCurrency(reportData?.sales?.summary?.agentCommissions || 0)}</span>
                       </div>
                       <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
                         <span className="text-red-700 arabic-text">المديونيات</span>
-                        <span className="font-bold text-red-900">{formatCurrency(reportData?.agents?.totalDebt || 0)}</span>
+                        <span className="font-bold text-red-900">{formatCurrency(reportData?.agents?.summary?.totalDebt || 0)}</span>
                       </div>
                     </div>
                   </CardContent>

@@ -197,13 +197,20 @@ export function UsersManagementPage() {
       console.log('🔐 Creating Firebase Auth user...')
       
       // Check if user already exists
+      console.log('🔍 Checking if user exists with email:', newUser.email)
       const existingUsersQuery = query(collection(db, 'users'), where('email', '==', newUser.email))
       const existingUsersSnapshot = await getDocs(existingUsersQuery)
       
+      console.log('📊 Existing users found:', existingUsersSnapshot.size)
+      
       if (!existingUsersSnapshot.empty) {
+        console.log('❌ User already exists with this email')
         toast.error('يوجد مستخدم بهذا البريد الإلكتروني بالفعل')
+        setCreating(false)
         return
       }
+      
+      console.log('✅ Email is available, proceeding with user creation')
       
       // Create Firebase Auth user
       const userCredential = await createUserWithEmailAndPassword(auth, newUser.email, newUser.password)

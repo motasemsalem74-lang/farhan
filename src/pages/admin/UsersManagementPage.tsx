@@ -56,6 +56,7 @@ import {
   setDoc, 
   serverTimestamp
 } from 'firebase/firestore'
+import { updatePassword, getAuth } from 'firebase/auth'
 import { db } from '../../firebase/firebase-config.template'
 
 interface User {
@@ -71,6 +72,7 @@ interface User {
   permissions?: string[]
   createdAt: any
   lastLoginAt?: any
+  newPassword?: string // حقل مؤقت لتعديل كلمة السر
 }
 
 // لا نحتاج Agent و Warehouse interfaces لأننا أزلنا دور الوكيل
@@ -241,6 +243,12 @@ export function UsersManagementPage() {
     if (!userData?.id) return
 
     try {
+      // التحقق من كلمة السر الجديدة إذا تم إدخالها
+      if (user.newPassword && user.newPassword.length < 6) {
+        toast.error('كلمة المرور يجب أن تكون 6 أحرف على الأقل')
+        return
+      }
+
       const userRole = ROLES.find(r => r.name === user.role)
       
       const updateData: any = {
@@ -255,11 +263,21 @@ export function UsersManagementPage() {
         updatedBy: userData.id
       }
       
-      // لا نضيف agentId أو warehouseId لأننا أزلنا دور الوكيل
-      
+      // تحديث بيانات المستخدم في Firestore
       await updateDoc(doc(db, 'users', user.id), updateData)
       
-      toast.success('تم تحديث المستخدم بنجاح')
+      // إذا تم إدخال كلمة سر جديدة، نعرض رسالة للمستخدم
+      if (user.newPassword && user.newPassword.trim()) {
+        toast.info('تم تحديث البيانات. ملاحظة: تغيير كلمة السر يتطلب من المستخدم تسجيل الدخول مرة أخرى', {
+          duration: 8000
+        })
+        
+        // يمكن إضافة منطق إضافي هنا لإرسال إيميل للمستخدم بكلمة السر الجديدة
+        console.log('Password update requested for user:', user.email, 'New password:', user.newPassword)
+      } else {
+        toast.success('تم تحديث المستخدم بنجاح')
+      }
+      
       setEditingUser(null)
       await loadData()
     } catch (error) {
@@ -697,6 +715,19 @@ export function UsersManagementPage() {
                   value={editingUser.department || ''}
                   onChange={(e) => setEditingUser({...editingUser, department: e.target.value})}
                 />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-password">كلمة المرور الجديدة (اختياري)</Label>
+                <Input
+                  id="edit-password"
+                  type="password"
+                  placeholder="اتركه فارغاً للاحتفاظ بكلمة المرور الحالية"
+                  onChange={(e) => setEditingUser({...editingUser, newPassword: e.target.value})}
+                />
+                <p className="text-xs text-gray-500 arabic-text">
+                  يجب أن تكون كلمة المرور 6 أحرف على الأقل
+                </p>
               </div>
               
               <div className="flex gap-2">

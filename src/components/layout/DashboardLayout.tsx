@@ -49,55 +49,55 @@ const navigation: NavigationItem[] = [
     name: 'الرئيسية',
     href: '/',
     icon: Home,
-    roles: ['super_admin', 'admin', 'showroom_user'] // إزالة الوكيل من شاشة الرئيسية
+    roles: ['super_admin', 'admin', 'admin_manager', 'sales_employee', 'showroom_user']
   },
   {
     name: 'إدارة المخزون',
     href: '/inventory',
     icon: Package,
-    roles: ['super_admin', 'admin', 'showroom_user'] // الوكيل لا يدير المخزون العام
+    roles: ['super_admin', 'admin', 'admin_manager', 'sales_employee', 'showroom_user']
   },
   {
     name: 'المبيعات',
     href: '/sales',
     icon: ShoppingCart,
-    roles: ['super_admin', 'admin', 'showroom_user'] // الوكيل له شاشة بيع خاصة
+    roles: ['super_admin', 'admin', 'admin_manager', 'sales_employee', 'showroom_user']
   },
   {
     name: 'الوكلاء',
     href: '/agents',
     icon: Users,
-    roles: ['super_admin', 'admin', 'agent'] // الوكيل يرى صفحته الخاصة فقط
+    roles: ['super_admin', 'admin', 'admin_manager', 'agent']
   },
   {
     name: 'تتبع الوثائق',
     href: '/documents',
     icon: FileText,
-    roles: ['super_admin', 'admin', 'agent', 'showroom_user'] // الوكيل يرى وثائقه فقط
+    roles: ['super_admin', 'admin', 'admin_manager', 'sales_employee', 'agent', 'showroom_user']
   },
   {
     name: 'استعلام العملاء',
     href: '/customers',
     icon: Search,
-    roles: ['super_admin', 'admin', 'agent', 'showroom_user'] // الوكيل يرى عملاءه فقط
+    roles: ['super_admin', 'admin', 'admin_manager', 'sales_employee', 'agent', 'showroom_user']
   },
   {
     name: 'التقارير',
     href: '/reports',
     icon: BarChart3,
-    roles: ['super_admin', 'admin'] // الوكيل لا يرى التقارير العامة
+    roles: ['super_admin', 'admin', 'admin_manager']
   },
   {
     name: 'إدارة المستخدمين',
     href: '/admin',
     icon: Shield,
-    roles: ['super_admin']
+    roles: ['super_admin', 'admin']
   },
   {
     name: 'الإعدادات',
     href: '/settings',
     icon: Settings,
-    roles: ['super_admin', 'admin', 'showroom_user'] // الوكيل لا يدير الإعدادات
+    roles: ['super_admin', 'admin', 'admin_manager', 'sales_employee', 'showroom_user']
   }
 ]
 
@@ -176,10 +176,12 @@ export function DashboardLayout({
     const roleLabels = {
       'super_admin': 'مدير أعلى',
       'admin': 'مدير إداري',
+      'admin_manager': 'مدير إداري',
+      'sales_employee': 'موظف مبيعات',
       'agent': 'وكيل',
       'showroom_user': 'مستخدم معرض'
     }
-    return roleLabels[role as keyof typeof roleLabels] || role
+    return roleLabels[role as keyof typeof roleLabels] || 'مستخدم'
   }
 
   return (

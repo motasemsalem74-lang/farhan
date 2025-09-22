@@ -155,8 +155,22 @@
         });
       }
       
-      // معالجة prompt التثبيت - تم نقلها لـ PWA Manager
-      // لتجنب التضارب، سيتم التعامل مع beforeinstallprompt في PWA Manager فقط
+      // معالجة prompt التثبيت
+      let deferredPrompt;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        // إشارة للتطبيق أن التثبيت متاح
+        window.dispatchEvent(new CustomEvent('pwa-install-available', { detail: e }));
+        console.log('📱 PWA: Install prompt available');
+      });
+      
+      // معالجة تثبيت التطبيق
+      window.addEventListener('appinstalled', () => {
+        console.log('✅ PWA: App installed successfully');
+        deferredPrompt = null;
+        window.dispatchEvent(new CustomEvent('pwa-installed'));
+      });
       
       // معالجة تغييرات حالة الاتصال
       window.addEventListener('online', () => {

@@ -52,6 +52,9 @@ interface SaleItem {
 }
 
 export default function CreateSalePage() {
+  console.log('🚨 [CRITICAL UPDATE] CreateSalePage component loaded at:', new Date().toISOString())
+  console.log('🚨 [CRITICAL UPDATE] This confirms the latest CreateSalePage.tsx is being used!')
+  
   const navigate = useNavigate()
   const [user] = useAuthState(auth)
   const { userData } = useUserData(user?.uid)
@@ -95,6 +98,9 @@ export default function CreateSalePage() {
   const customerData = watch('customer')
 
   useEffect(() => {
+    console.log('🚨 [CRITICAL UPDATE] CreateSalePage useEffect triggered at:', new Date().toISOString())
+    console.log('🚨 [CRITICAL UPDATE] Latest code is running - warehouses will load now!')
+    
     if (userData) {
       loadWarehouses()
       loadAvailableItems()

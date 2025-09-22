@@ -28,8 +28,8 @@ class PushNotificationManager {
       
       this.messaging = getMessaging()
       
-      // Request permission and get token
-      await this.requestPermission()
+      // Don't automatically request permission - wait for user gesture
+      // await this.requestPermission()
       
       // Listen for foreground messages
       this.setupForegroundListener()

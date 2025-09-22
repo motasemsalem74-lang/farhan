@@ -39,8 +39,13 @@ export async function requestNotificationPermission(userId: string): Promise<str
       return null
     }
 
-    // Request permission
-    const permission = await Notification.requestPermission()
+    // Check current permission first
+    let permission = Notification.permission
+    
+    // Only request if not already determined
+    if (permission === 'default') {
+      permission = await Notification.requestPermission()
+    }
     
     if (permission !== 'granted') {
       console.warn('Notification permission denied')

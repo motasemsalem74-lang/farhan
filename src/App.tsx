@@ -21,7 +21,7 @@ import { CompanySalesPage } from './pages/sales/CompanySalesPage'
 import { AgentsPage } from './pages/agents/AgentsPage'
 import { AgentMainPage } from './pages/agents/AgentMainPage'
 import { DocumentTrackingPage } from './pages/documents/DocumentTrackingPage'
-import { CustomerInquiryPage } from './components/customer-inquiry/CustomerInquiryPage'
+import { CustomerInquiryPage } from './pages/customer-inquiry/CustomerInquiryPage'
 import { ReportsPage } from './pages/reports/ReportsPage'
 import AdvancedReportsPage from './pages/reports/AdvancedReportsPage'
 import { SimpleSettingsPage } from './pages/settings/SimpleSettingsPage'
@@ -74,9 +74,9 @@ function App() {
       // Initialize warehouses
       initializeWarehouses()
       
-      // Initialize Push Notifications
+      // Initialize Push Notifications (without auto-requesting permission)
       pushNotificationManager.initialize().then(() => {
-        console.log('📱 Push notifications initialized')
+        console.log('📱 Push notifications initialized (permission will be requested on user action)')
         // Store current user ID for FCM token
         localStorage.setItem('currentUserId', userData.id)
       }).catch(error => {

@@ -149,9 +149,15 @@ class PWAManager {
     })
 
     window.addEventListener('appinstalled', () => {
-      toast.success('تم تثبيت التطبيق بنجاح!', {
+      console.log('📱 PWA: App installed successfully')
+      
+      // حفظ حالة التثبيت
+      localStorage.setItem('pwa-installed', 'true')
+      
+      toast.success('🎉 تم تثبيت التطبيق بنجاح!', {
         description: 'يمكنك الآن الوصول للتطبيق من الشاشة الرئيسية'
       })
+      
       this.installPrompt = null
     })
   }
@@ -184,12 +190,8 @@ class PWAManager {
    * فحص وعرض رسالة تثبيت عامة للمتصفحات التي لا تدعم beforeinstallprompt
    */
   private checkAndShowGenericInstallPrompt(): void {
-    // التحقق من أن التطبيق غير مثبت
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-    const isInWebAppiOS = (window.navigator as any).standalone === true
-    const isInstalled = isStandalone || isInWebAppiOS
-    
-    if (isInstalled) {
+    // فحص شامل لحالة التثبيت
+    if (this.isAppInstalled()) {
       console.log('📱 PWA: App already installed, skipping generic prompt')
       return
     }
@@ -407,18 +409,48 @@ class PWAManager {
   }
 
   /**
+   * فحص شامل لحالة تثبيت التطبيق
+   */
+  private isAppInstalled(): boolean {
+    // فحص display mode
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    
+    // فحص iOS Safari
+    const isInWebAppiOS = (window.navigator as any).standalone === true
+    
+    // فحص إضافي للمتصفحات الأخرى
+    const isInWebApp = window.matchMedia('(display-mode: fullscreen)').matches ||
+                      window.matchMedia('(display-mode: minimal-ui)').matches
+    
+    // فحص URL للتأكد من أنه ليس في iframe أو popup
+    const isMainWindow = window.self === window.top
+    
+    // فحص localStorage للحالة المحفوظة
+    const wasInstalled = localStorage.getItem('pwa-installed') === 'true'
+    
+    const isInstalled = isStandalone || isInWebAppiOS || isInWebApp || wasInstalled
+    
+    console.log('📱 PWA: Install status check:', {
+      isStandalone,
+      isInWebAppiOS,
+      isInWebApp,
+      isMainWindow,
+      wasInstalled,
+      finalResult: isInstalled
+    })
+    
+    return isInstalled
+  }
+
+  /**
    * عرض بانر التثبيت
    * 
    * التحديث الأخير: إصلاح مشكلة manifest.json 401 في vercel.json
    * الآن يعمل التثبيت المباشر بدون أخطاء
    */
   private showInstallBanner(): void {
-    // التحقق من أن التطبيق غير مثبت
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-    const isInWebAppiOS = (window.navigator as any).standalone === true
-    const isInstalled = isStandalone || isInWebAppiOS
-    
-    if (isInstalled) {
+    // فحص شامل لحالة التثبيت
+    if (this.isAppInstalled()) {
       console.log('📱 PWA: App already installed, skipping banner')
       return
     }

@@ -127,10 +127,12 @@ function InventoryList() {
       const searchTerm = filters.search.toLowerCase().trim()
       const searchWords = searchTerm.split(' ').filter(word => word.length > 0)
       
-      // النص الكامل للبحث فيه
-      const fullText = `${item.brand} ${item.model} ${item.motorFingerprint} ${item.chassisNumber}`.toLowerCase()
+      // النص الكامل للبحث فيه (مع سنة الصنع)
+      const fullText = `${item.brand} ${item.model} ${item.manufacturingYear || ''} ${item.motorFingerprint} ${item.chassisNumber}`.toLowerCase()
       const brandModel = `${item.brand} ${item.model}`.toLowerCase()
       const modelBrand = `${item.model} ${item.brand}`.toLowerCase()
+      const brandModelYear = `${item.brand} ${item.model} ${item.manufacturingYear || ''}`.toLowerCase()
+      const yearBrandModel = `${item.manufacturingYear || ''} ${item.brand} ${item.model}`.toLowerCase()
       
       // البحث بطرق متعددة
       const matchesSearch = 
@@ -139,13 +141,17 @@ function InventoryList() {
         // البحث في تركيبة الماركة والموديل
         brandModel.includes(searchTerm) ||
         modelBrand.includes(searchTerm) ||
+        // البحث في تركيبة الماركة والموديل والسنة
+        brandModelYear.includes(searchTerm) ||
+        yearBrandModel.includes(searchTerm) ||
         // البحث بالكلمات المنفصلة (كل الكلمات يجب أن تكون موجودة)
         searchWords.every(word => fullText.includes(word)) ||
         // البحث في الحقول المنفردة
         item.motorFingerprint.toLowerCase().includes(searchTerm) ||
         item.chassisNumber.toLowerCase().includes(searchTerm) ||
         item.brand.toLowerCase().includes(searchTerm) ||
-        item.model.toLowerCase().includes(searchTerm)
+        item.model.toLowerCase().includes(searchTerm) ||
+        (item.manufacturingYear && item.manufacturingYear.toString().includes(searchTerm))
       
       if (!matchesSearch) {
         return false
@@ -232,14 +238,11 @@ function InventoryList() {
             <div className="lg:col-span-2">
               <Input
                 type="text"
-                placeholder="البحث: ماركة، موديل، رقم محرك، شاسيه (مثال: هوجن 3)"
+                placeholder="البحث في المخزون (مثال: هوجن 3 2025)"
                 value={filters.search}
                 onChange={(e) => handleFilterChange('search', e.target.value)}
                 className="w-full"
               />
-              <p className="text-xs text-gray-500 mt-1 arabic-text">
-                يمكنك البحث بـ "هوجن 3" أو "3 هوجن" أو "هوجن" أو "3" منفردة
-              </p>
             </div>
 
             {/* Warehouse Filter */}

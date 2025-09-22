@@ -122,6 +122,9 @@ class PWAManager {
 
   /**
    * إعداد مراقبة إمكانية التثبيت
+   * 
+   * ملاحظة هامة: تم إصلاح مشكلة manifest.json 401 error في vercel.json
+   * الآن سيعمل beforeinstallprompt بشكل صحيح ويظهر زر التثبيت المباشر
    */
   private setupInstallPrompt(): void {
     window.addEventListener('beforeinstallprompt', (e) => {
@@ -381,6 +384,9 @@ class PWAManager {
 
   /**
    * عرض بانر التثبيت
+   * 
+   * التحديث الأخير: إصلاح مشكلة manifest.json 401 في vercel.json
+   * الآن يعمل التثبيت المباشر بدون أخطاء
    */
   private showInstallBanner(): void {
     // التحقق من أن التطبيق غير مثبت

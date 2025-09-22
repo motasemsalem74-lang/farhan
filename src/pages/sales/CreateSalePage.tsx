@@ -65,12 +65,13 @@ export default function CreateSalePage() {
       return
     }
   }, [authUserData, navigate])
-  const [, setWarehouses] = useState<Warehouse[]>([])
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([])
+  const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>('all')
   const [availableItems, setAvailableItems] = useState<InventoryItem[]>([])
   const [selectedItems, setSelectedItems] = useState<SaleItem[]>([])
   const [loading, setLoading] = useState(false)
-  const [ocrStep, setOcrStep] = useState<OCRStep>('none')
   const [itemSearchQuery, setItemSearchQuery] = useState('')
+  const [ocrStep, setOcrStep] = useState<OCRStep>('none')
   const [extractedCustomerData, setExtractedCustomerData] = useState<ExtractedCustomerData>({})
 
   const {
@@ -492,7 +493,14 @@ export default function CreateSalePage() {
 
   // Commission functionality removed - all profits go to institution
 
+  // Filter items by selected warehouse and search query
   const filteredItems = availableItems.filter(item => {
+    // Filter by warehouse first
+    if (selectedWarehouseId !== 'all' && item.currentWarehouseId !== selectedWarehouseId) {
+      return false
+    }
+    
+    // Then filter by search query
     if (!itemSearchQuery) return false
     const query = itemSearchQuery.toLowerCase()
     return (
@@ -692,6 +700,25 @@ export default function CreateSalePage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Warehouse Selection */}
+                <div className="space-y-2">
+                  <Label>اختيار المخزن</Label>
+                  <select
+                    value={selectedWarehouseId}
+                    onChange={(e) => setSelectedWarehouseId(e.target.value)}
+                    className="w-full form-input input-rtl arabic-text"
+                  >
+                    <option value="all">جميع المخازن المتاحة</option>
+                    {warehouses
+                      .filter(w => w.type !== 'agent') // Hide agent warehouses
+                      .map(warehouse => (
+                        <option key={warehouse.id} value={warehouse.id}>
+                          {warehouse.name} ({warehouse.type === 'main' ? 'رئيسي' : warehouse.type === 'showroom' ? 'معرض' : warehouse.type})
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
                 <div className="space-y-2">
                   <Label>البحث عن صنف</Label>
                   <Input
@@ -713,6 +740,9 @@ export default function CreateSalePage() {
                                 <p className="font-medium arabic-text">{item.brand} {item.model}</p>
                                 <p className="text-sm text-gray-600">{item.motorFingerprint}</p>
                                 <p className="text-sm text-gray-500">{formatCurrency(item.purchasePrice)}</p>
+                                <p className="text-xs text-gray-400">
+                                  المخزن: {warehouses.find(w => w.id === item.currentWarehouseId)?.name || 'غير محدد'}
+                                </p>
                               </div>
                               <Button
                                 type="button"
@@ -740,10 +770,10 @@ export default function CreateSalePage() {
                 {!itemSearchQuery && availableItems.length > 0 && (
                   <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                     <p className="text-sm text-blue-800 arabic-text">
-                      <strong>متاح:</strong> {availableItems.length} منتج في المخزن الرئيسي والمعرض
+                      <strong>متاح:</strong> {availableItems.length} منتج في المخازن المحددة
                     </p>
                     <p className="text-xs text-blue-600 arabic-text mt-1">
-                      ابدأ بالبحث لإظهار المنتجات المتاحة
+                      اختر المخزن وابدأ بالبحث لإظهار المنتجات المتاحة
                     </p>
                   </div>
                 )}
@@ -751,7 +781,7 @@ export default function CreateSalePage() {
                 {availableItems.length === 0 && (
                   <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <p className="text-sm text-yellow-800 arabic-text">
-                      <strong>تنبيه:</strong> لا توجد منتجات متاحة في المخزن الرئيسي أو المعرض
+                      <strong>تنبيه:</strong> لا توجد منتجات متاحة في المخازن المحددة
                     </p>
                     <p className="text-xs text-yellow-600 arabic-text mt-1">
                       يرجى التأكد من وجود منتجات في المخازن المناسبة

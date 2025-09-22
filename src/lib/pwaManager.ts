@@ -134,6 +134,16 @@ class PWAManager {
       }, 3000) // 3 ثوانِ
     })
 
+    // فحص إضافي بعد تحميل الصفحة للمتصفحات التي لا تدعم beforeinstallprompt
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        // إذا لم يتم تشغيل beforeinstallprompt، جرب عرض رسالة عامة
+        if (!this.installPrompt) {
+          this.checkAndShowGenericInstallPrompt()
+        }
+      }, 5000) // 5 ثوانِ بعد التحميل
+    })
+
     window.addEventListener('appinstalled', () => {
       toast.success('تم تثبيت التطبيق بنجاح!', {
         description: 'يمكنك الآن الوصول للتطبيق من الشاشة الرئيسية'
@@ -167,18 +177,88 @@ class PWAManager {
   }
 
   /**
+   * فحص وعرض رسالة تثبيت عامة للمتصفحات التي لا تدعم beforeinstallprompt
+   */
+  private checkAndShowGenericInstallPrompt(): void {
+    // التحقق من أن التطبيق غير مثبت
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    const isInWebAppiOS = (window.navigator as any).standalone === true
+    const isInstalled = isStandalone || isInWebAppiOS
+    
+    if (isInstalled) {
+      console.log('📱 PWA: App already installed, skipping generic prompt')
+      return
+    }
+
+    // التحقق من أن المتصفح يدعم PWA
+    const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor)
+    const isEdge = /Edg/.test(navigator.userAgent)
+    const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent)
+    
+    if (isChrome || isEdge || isSafari) {
+      console.log('📱 PWA: Showing generic install prompt')
+      
+      toast.info('📱 يمكن تثبيت تطبيق الفرحان!', {
+        description: 'استخدم قائمة المتصفح لتثبيت التطبيق على جهازك',
+        action: {
+          label: '📖 كيفية التثبيت',
+          onClick: () => this.showInstallInstructions()
+        },
+        duration: 20000,
+        position: 'top-center'
+      })
+    }
+  }
+
+  /**
+   * عرض تعليمات التثبيت
+   */
+  private showInstallInstructions(): void {
+    const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor)
+    const isEdge = /Edg/.test(navigator.userAgent)
+    const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent)
+    
+    let instructions = ''
+    
+    if (isChrome || isEdge) {
+      instructions = 'اضغط على الثلاث نقاط (⋮) في أعلى المتصفح ← اختر "تثبيت التطبيق" أو "Install App"'
+    } else if (isSafari) {
+      instructions = 'اضغط على زر المشاركة (📤) ← اختر "إضافة إلى الشاشة الرئيسية"'
+    } else {
+      instructions = 'ابحث عن خيار "تثبيت التطبيق" أو "Add to Home Screen" في قائمة المتصفح'
+    }
+    
+    toast.info('📖 تعليمات التثبيت', {
+      description: instructions,
+      duration: 15000,
+      position: 'top-center'
+    })
+  }
+
+  /**
    * عرض بانر التثبيت
    */
   private showInstallBanner(): void {
+    // التحقق من أن التطبيق غير مثبت
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    const isInWebAppiOS = (window.navigator as any).standalone === true
+    const isInstalled = isStandalone || isInWebAppiOS
+    
+    if (isInstalled) {
+      console.log('📱 PWA: App already installed, skipping banner')
+      return
+    }
+    
     console.log('📱 PWA: Install prompt available - showing banner')
     
-    toast.info('🚀 ثبت التطبيق على جهازك', {
-      description: 'للحصول على تجربة أفضل وسرعة أكبر في الوصول',
+    toast.info('📱 تطبيق الفرحان متاح للتثبيت!', {
+      description: 'ثبت التطبيق على جهازك للوصول السريع والعمل بدون إنترنت',
       action: {
-        label: 'تثبيت الآن',
+        label: '⬇️ تثبيت الآن',
         onClick: () => this.installApp()
       },
-      duration: 20000 // 20 ثانية
+      duration: 25000, // 25 ثانية
+      position: 'top-center'
     })
   }
 

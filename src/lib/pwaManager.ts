@@ -236,6 +236,29 @@ class PWAManager {
    * محاولة تشغيل التثبيت المباشر
    */
   private attemptDirectInstall(): void {
+    console.log('📱 PWA: Attempting direct install - checking manifest availability')
+    
+    // أولاً تحقق من توفر manifest.json
+    fetch('/manifest.json')
+      .then(response => {
+        if (response.ok) {
+          console.log('✅ PWA: Manifest available, proceeding with install')
+          this.createCustomInstallPrompt()
+        } else {
+          console.log('❌ PWA: Manifest not available (401), showing fallback')
+          this.showInstallInstructions()
+        }
+      })
+      .catch(() => {
+        console.log('❌ PWA: Manifest fetch failed, showing fallback')
+        this.showInstallInstructions()
+      })
+  }
+
+  /**
+   * إنشاء install prompt مخصص
+   */
+  private createCustomInstallPrompt(): void {
     // جرب تشغيل beforeinstallprompt يدوياً
     const beforeInstallPromptEvent = new Event('beforeinstallprompt')
     

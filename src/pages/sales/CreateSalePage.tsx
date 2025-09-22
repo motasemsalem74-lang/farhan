@@ -67,6 +67,14 @@ export default function CreateSalePage() {
   }, [authUserData, navigate])
   const [warehouses, setWarehouses] = useState<Warehouse[]>([])
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>('all')
+  
+  // Debug warehouses state changes
+  useEffect(() => {
+    console.log('🏪 Warehouses state updated:', {
+      count: warehouses.length,
+      warehouses: warehouses.map(w => ({ id: w.id, name: w.name, type: w.type }))
+    })
+  }, [warehouses])
   const [availableItems, setAvailableItems] = useState<InventoryItem[]>([])
   const [selectedItems, setSelectedItems] = useState<SaleItem[]>([])
   const [loading, setLoading] = useState(false)
@@ -764,21 +772,33 @@ export default function CreateSalePage() {
                   <Label>اختيار المخزن</Label>
                   <select
                     value={selectedWarehouseId}
-                    onChange={(e) => setSelectedWarehouseId(e.target.value)}
+                    onChange={(e) => {
+                      console.log('🏪 Warehouse selection changed:', e.target.value)
+                      setSelectedWarehouseId(e.target.value)
+                    }}
                     className="w-full form-input input-rtl arabic-text"
                   >
                     <option value="all">جميع المخازن المتاحة</option>
-                    {warehouses.length === 0 ? (
-                      <option disabled>جاري تحميل المخازن...</option>
-                    ) : (
-                      warehouses
-                        .filter(w => w.type !== 'agent') // Hide agent warehouses
-                        .map(warehouse => (
-                          <option key={warehouse.id} value={warehouse.id}>
-                            {warehouse.name} ({warehouse.type === 'main' ? 'رئيسي' : warehouse.type === 'showroom' ? 'معرض' : warehouse.type})
-                          </option>
-                        ))
-                    )}
+                    {(() => {
+                      console.log('🏪 Rendering warehouse options:', {
+                        warehousesLength: warehouses.length,
+                        warehouses: warehouses.map(w => ({ id: w.id, name: w.name, type: w.type })),
+                        nonAgentWarehouses: warehouses.filter(w => w.type !== 'agent').length
+                      })
+                      
+                      if (warehouses.length === 0) {
+                        return <option disabled>جاري تحميل المخازن...</option>
+                      }
+                      
+                      const nonAgentWarehouses = warehouses.filter(w => w.type !== 'agent')
+                      console.log('🏪 Non-agent warehouses for dropdown:', nonAgentWarehouses)
+                      
+                      return nonAgentWarehouses.map(warehouse => (
+                        <option key={warehouse.id} value={warehouse.id}>
+                          {warehouse.name} ({warehouse.type === 'main' ? 'رئيسي' : warehouse.type === 'showroom' ? 'معرض' : warehouse.type})
+                        </option>
+                      ))
+                    })()}
                   </select>
                   
                   {/* Debug info for warehouses */}

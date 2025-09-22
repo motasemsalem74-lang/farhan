@@ -101,6 +101,13 @@ export default function CreateSalePage() {
     }
   }, [userData])
 
+  // Reload items when warehouse selection changes
+  useEffect(() => {
+    if (userData && warehouses.length > 0) {
+      loadAvailableItems()
+    }
+  }, [selectedWarehouseId])
+
   const loadWarehouses = async () => {
     try {
       // Load warehouses from Firebase
@@ -117,7 +124,11 @@ export default function CreateSalePage() {
       
       setWarehouses(warehousesData)
       
-      console.log('✅ Loaded warehouses:', warehousesData.length)
+      console.log('✅ Loaded warehouses:', {
+        total: warehousesData.length,
+        nonAgent: warehousesData.filter(w => w.type !== 'agent').length,
+        warehouses: warehousesData.map(w => ({ id: w.id, name: w.name, type: w.type }))
+      })
     } catch (error) {
       console.error('Error loading warehouses:', error)
       toast.error('خطأ في تحميل المخازن')
@@ -709,14 +720,31 @@ export default function CreateSalePage() {
                     className="w-full form-input input-rtl arabic-text"
                   >
                     <option value="all">جميع المخازن المتاحة</option>
-                    {warehouses
-                      .filter(w => w.type !== 'agent') // Hide agent warehouses
-                      .map(warehouse => (
-                        <option key={warehouse.id} value={warehouse.id}>
-                          {warehouse.name} ({warehouse.type === 'main' ? 'رئيسي' : warehouse.type === 'showroom' ? 'معرض' : warehouse.type})
-                        </option>
-                      ))}
+                    {warehouses.length === 0 ? (
+                      <option disabled>جاري تحميل المخازن...</option>
+                    ) : (
+                      warehouses
+                        .filter(w => w.type !== 'agent') // Hide agent warehouses
+                        .map(warehouse => (
+                          <option key={warehouse.id} value={warehouse.id}>
+                            {warehouse.name} ({warehouse.type === 'main' ? 'رئيسي' : warehouse.type === 'showroom' ? 'معرض' : warehouse.type})
+                          </option>
+                        ))
+                    )}
                   </select>
+                  
+                  {/* Debug info for warehouses */}
+                  {warehouses.length > 0 && (
+                    <p className="text-xs text-gray-500">
+                      تم تحميل {warehouses.filter(w => w.type !== 'agent').length} مخزن متاح
+                    </p>
+                  )}
+                  
+                  {warehouses.length === 0 && (
+                    <p className="text-xs text-red-500">
+                      لم يتم العثور على مخازن. يرجى التأكد من وجود مخازن نشطة في النظام.
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">

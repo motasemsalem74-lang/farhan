@@ -110,32 +110,12 @@ export default function CreateSalePage() {
 
   const loadWarehouses = async () => {
     try {
-      console.log('🔄 [WAREHOUSE FIX] Loading warehouses from Firebase...')
-      console.log('🔄 [WAREHOUSE FIX] Current timestamp:', new Date().toISOString())
+      console.log('🏪 [SALES CREATE] Loading warehouses...')
       
-      // First, try to load ALL warehouses to see what's in the database
-      console.log('🔍 Loading ALL warehouses first for debugging...')
-      const allWarehousesQuery = query(collection(db, 'warehouses'))
-      const allWarehousesSnapshot = await getDocs(allWarehousesQuery)
-      const allWarehouses = allWarehousesSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }))
-      
-      console.log('📋 ALL warehouses in database:', {
-        total: allWarehouses.length,
-        warehouses: allWarehouses.map(w => ({ 
-          id: w.id, 
-          name: w.name, 
-          type: w.type, 
-          isActive: w.isActive 
-        }))
-      })
-      
-      // Now load only active warehouses
+      // استخدام نفس منطق CompanySalesPage - بسيط وفعال
       const warehousesQuery = query(
         collection(db, 'warehouses'),
-        where('isActive', '==', true)
+        where('agentId', '==', null) // مخازن الشركة فقط (ليس للوكلاء)
       )
       
       const warehousesSnapshot = await getDocs(warehousesQuery)
@@ -144,43 +124,26 @@ export default function CreateSalePage() {
         ...doc.data()
       })) as Warehouse[]
       
-      console.log('📦 Raw warehouses data:', warehousesData)
-      
-      // If no warehouses found, show detailed error
-      if (warehousesData.length === 0) {
-        console.warn('⚠️ No warehouses found in database!')
-        console.log('🔍 Query details:', {
-          collection: 'warehouses',
-          filter: 'isActive == true',
-          snapshotSize: warehousesSnapshot.size,
-          snapshotEmpty: warehousesSnapshot.empty
-        })
-        toast.error('لم يتم العثور على مخازن نشطة في قاعدة البيانات')
-        return
-      }
+      console.log('🏪 [SALES CREATE] Company warehouses found:', warehousesData.length)
+      console.log('🏪 [SALES CREATE] Warehouses:', warehousesData.map(w => ({
+        id: w.id,
+        name: w.name,
+        type: w.type
+      })))
       
       setWarehouses(warehousesData)
       
-      console.log('✅ Loaded warehouses successfully:', {
-        total: warehousesData.length,
-        nonAgent: warehousesData.filter(w => w.type !== 'agent').length,
-        warehouses: warehousesData.map(w => ({ id: w.id, name: w.name, type: w.type, isActive: w.isActive }))
-      })
-      
-      const nonAgentWarehouses = warehousesData.filter(w => w.type !== 'agent')
-      if (nonAgentWarehouses.length === 0) {
-        console.warn('⚠️ No non-agent warehouses found!')
-        toast.error('لا توجد مخازن متاحة للبيع (جميع المخازن خاصة بالوكلاء)')
+      if (warehousesData.length === 0) {
+        toast.error('لا توجد مخازن شركة متاحة')
+        console.warn('🏪 [SALES CREATE] No company warehouses found')
+      } else {
+        toast.success(`تم تحميل ${warehousesData.length} مخزن`)
+        console.log('🏪 [SALES CREATE] Warehouses loaded successfully')
       }
       
     } catch (error) {
-      console.error('❌ Error loading warehouses:', error)
-      console.log('🔍 Error details:', {
-        message: (error as Error).message,
-        code: (error as any).code,
-        stack: (error as Error).stack
-      })
-      toast.error('خطأ في تحميل المخازن: ' + (error as Error).message)
+      console.error('🏪 [SALES CREATE] Error loading warehouses:', error)
+      toast.error('خطأ في تحميل المخازن')
     }
   }
 
@@ -765,27 +728,31 @@ export default function CreateSalePage() {
                   <Label>اختيار المخزن</Label>
                   <select
                     value={selectedWarehouseId}
-                    onChange={(e) => setSelectedWarehouseId(e.target.value)}
+                    onChange={(e) => {
+                      console.log('🏪 [SALES CREATE] Warehouse selection changed:', e.target.value)
+                      setSelectedWarehouseId(e.target.value)
+                    }}
                     className="w-full form-input input-rtl arabic-text"
                   >
                     <option value="all">جميع المخازن المتاحة</option>
                     {warehouses.length === 0 ? (
                       <option disabled>جاري تحميل المخازن...</option>
                     ) : (
-                      warehouses
-                        .filter(w => w.type !== 'agent') // Hide agent warehouses
-                        .map(warehouse => (
+                      warehouses.map(warehouse => {
+                        console.log('🏪 [SALES CREATE] Rendering warehouse option:', warehouse.name)
+                        return (
                           <option key={warehouse.id} value={warehouse.id}>
-                            {warehouse.name} ({warehouse.type === 'main' ? 'رئيسي' : warehouse.type === 'showroom' ? 'معرض' : warehouse.type})
+                            {warehouse.name}
                           </option>
-                        ))
+                        )
+                      })
                     )}
                   </select>
                   
                   {/* Debug info for warehouses */}
                   {warehouses.length > 0 && (
                     <p className="text-xs text-gray-500">
-                      تم تحميل {warehouses.filter(w => w.type !== 'agent').length} مخزن متاح
+                      تم تحميل {warehouses.length} مخزن متاح
                     </p>
                   )}
                   

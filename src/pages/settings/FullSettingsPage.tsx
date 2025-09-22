@@ -36,11 +36,22 @@ export function FullSettingsPage() {
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [isAppInstalled, setIsAppInstalled] = useState(false)
 
   // تحميل الإعدادات من Firebase
   useEffect(() => {
     loadSettings()
+    checkInstallStatus()
   }, [])
+
+  const checkInstallStatus = () => {
+    // التحقق من حالة التثبيت
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    const isInWebAppiOS = (window.navigator as any).standalone === true
+    const isInstalled = isStandalone || isInWebAppiOS
+    
+    setIsAppInstalled(isInstalled)
+  }
 
   const loadSettings = async () => {
     try {
@@ -256,19 +267,37 @@ export function FullSettingsPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+            <div className={`flex items-center justify-between p-4 rounded-lg ${
+              isAppInstalled ? 'bg-green-50' : 'bg-blue-50'
+            }`}>
               <div>
-                <h4 className="font-medium text-blue-900">تثبيت التطبيق</h4>
-                <p className="text-sm text-blue-700">ثبت التطبيق على جهازك للوصول السريع</p>
+                <h4 className={`font-medium ${
+                  isAppInstalled ? 'text-green-900' : 'text-blue-900'
+                }`}>
+                  تثبيت التطبيق
+                </h4>
+                <p className={`text-sm ${
+                  isAppInstalled ? 'text-green-700' : 'text-blue-700'
+                }`}>
+                  {isAppInstalled 
+                    ? 'التطبيق مثبت ويعمل في وضع standalone'
+                    : 'ثبت التطبيق على جهازك للوصول السريع'
+                  }
+                </p>
               </div>
               <Button
                 onClick={() => pwaManager.installApp()}
-                disabled={!pwaManager.canInstall}
+                disabled={isAppInstalled || !pwaManager.canInstall}
                 variant="outline"
                 size="sm"
               >
                 <Download className="h-4 w-4 mr-2" />
-                {pwaManager.canInstall ? 'تثبيت' : 'مثبت بالفعل'}
+                {isAppInstalled 
+                  ? 'مثبت بالفعل' 
+                  : pwaManager.canInstall 
+                    ? 'تثبيت الآن' 
+                    : 'غير متاح للتثبيت'
+                }
               </Button>
             </div>
           </div>

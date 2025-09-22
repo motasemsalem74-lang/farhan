@@ -7,7 +7,11 @@ import {
   Grid3X3,
   List,
   Eye,
-  Edit
+  Edit,
+  TrendingUp,
+  Hash,
+  DollarSign,
+  BarChart3
 } from 'lucide-react'
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore'
 import { useAuthState } from 'react-firebase-hooks/auth'
@@ -156,6 +160,17 @@ function InventoryList() {
     setFilters(prev => ({ ...prev, [key]: value }))
   }
 
+  // حساب الإحصائيات للأصناف المفلترة
+  const stats = {
+    totalItems: filteredInventory.length,
+    totalPurchaseValue: filteredInventory.reduce((sum, item) => sum + (Number(item.purchasePrice) || 0), 0),
+    availableItems: filteredInventory.filter(item => item.status === 'available').length,
+    soldItems: filteredInventory.filter(item => item.status === 'sold').length,
+    averagePrice: filteredInventory.length > 0 
+      ? filteredInventory.reduce((sum, item) => sum + (Number(item.purchasePrice) || 0), 0) / filteredInventory.length 
+      : 0
+  }
+
   const canAddItems = userData && (isSuperAdmin(userData.role) || isAdmin(userData.role))
 
   if (!userData) {
@@ -273,6 +288,69 @@ function InventoryList() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Items */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">إجمالي الأصناف</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalItems.toLocaleString()}</p>
+              </div>
+              <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <Hash className="h-6 w-6 text-blue-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Total Purchase Value */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">إجمالي قيمة الشراء</p>
+                <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.totalPurchaseValue)}</p>
+              </div>
+              <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <DollarSign className="h-6 w-6 text-green-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Available Items */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">الأصناف المتاحة</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.availableItems.toLocaleString()}</p>
+              </div>
+              <div className="h-12 w-12 bg-emerald-100 rounded-lg flex items-center justify-center">
+                <Package className="h-6 w-6 text-emerald-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Average Price */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">متوسط السعر</p>
+                <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.averagePrice)}</p>
+              </div>
+              <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                <BarChart3 className="h-6 w-6 text-purple-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* View Controls */}
       <div className="flex items-center justify-between">

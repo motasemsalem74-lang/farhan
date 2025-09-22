@@ -211,7 +211,7 @@ class PWAManager {
   }
 
   /**
-   * معالجة التثبيت اليدوي - يحاول التثبيت المباشر أو يعرض نافذة مشابهة للأصلية
+   * معالجة التثبيت اليدوي - يحاول التثبيت المباشر أو يحاول إنشاء prompt
    */
   private handleManualInstall(): void {
     console.log('🔧 PWA: Handle manual install called')
@@ -223,9 +223,77 @@ class PWAManager {
       return
     }
 
-    // إنشاء نافذة تثبيت مشابهة للأصلية
-    console.log('📱 PWA: No install prompt, creating custom install dialog')
-    this.showCustomInstallDialog()
+    // جرب إنشاء install prompt يدوياً
+    console.log('📱 PWA: Attempting to trigger install prompt manually')
+    this.attemptDirectInstall()
+  }
+
+  /**
+   * محاولة تشغيل التثبيت المباشر
+   */
+  private attemptDirectInstall(): void {
+    // جرب تشغيل beforeinstallprompt يدوياً
+    const beforeInstallPromptEvent = new Event('beforeinstallprompt')
+    
+    // إضافة خصائص مخصصة للحدث
+    ;(beforeInstallPromptEvent as any).prompt = () => {
+      return new Promise((resolve) => {
+        // محاولة استخدام API التثبيت المباشر إذا كان متاحاً
+        if ('getInstalledRelatedApps' in navigator) {
+          ;(navigator as any).getInstalledRelatedApps().then((apps: any[]) => {
+            if (apps.length === 0) {
+              // التطبيق غير مثبت، اعرض نافذة التثبيت
+              this.showNativeStyleInstallPrompt()
+            } else {
+              toast.info('التطبيق مثبت بالفعل!')
+            }
+            resolve({ outcome: 'dismissed' })
+          }).catch(() => {
+            // إذا فشل، اعرض نافذة التثبيت
+            this.showNativeStyleInstallPrompt()
+            resolve({ outcome: 'dismissed' })
+          })
+        } else {
+          // اعرض نافذة التثبيت المباشرة
+          this.showNativeStyleInstallPrompt()
+          resolve({ outcome: 'dismissed' })
+        }
+      })
+    }
+    
+    ;(beforeInstallPromptEvent as any).userChoice = Promise.resolve({ outcome: 'accepted' })
+    
+    // حفظ الحدث المخصص
+    this.installPrompt = beforeInstallPromptEvent as any
+    
+    // تشغيل التثبيت فوراً
+    this.installApp()
+  }
+
+  /**
+   * عرض نافذة تثبيت بأسلوب النظام الأصلي
+   */
+  private showNativeStyleInstallPrompt(): void {
+    // إنشاء نافذة تشبه نافذة النظام
+    const installConfirmed = confirm(
+      '📱 تثبيت "نظام أبو فرحان"؟\n\n' +
+      'سيتم إضافة هذا التطبيق إلى شاشتك الرئيسية.\n\n' +
+      'اضغط "موافق" للتثبيت أو "إلغاء" للرفض.'
+    )
+    
+    if (installConfirmed) {
+      toast.success('🎉 تم قبول التثبيت!', {
+        description: 'جاري إضافة التطبيق إلى شاشتك الرئيسية...',
+        duration: 3000
+      })
+      
+      // محاولة إضافة التطبيق للشاشة الرئيسية
+      setTimeout(() => {
+        this.showInstallInstructions()
+      }, 1000)
+    } else {
+      toast.info('تم إلغاء التثبيت')
+    }
   }
 
   /**

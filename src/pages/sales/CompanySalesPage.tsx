@@ -81,6 +81,14 @@ export function CompanySalesPage() {
   const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm<SaleFormData>()
   
   const idCardImage = watch('idCardImage')
+  
+  // Debug logging للصورة
+  useEffect(() => {
+    console.log('🖼️ ID Card Image state changed:', idCardImage ? 'Image present' : 'No image')
+    if (idCardImage) {
+      console.log('📷 Image URL:', idCardImage.substring(0, 100) + '...')
+    }
+  }, [idCardImage])
 
   // التحقق من الصلاحيات
   const canSeeProfit = canViewProfits(userData?.role || '')
@@ -215,7 +223,13 @@ export function CompanySalesPage() {
 
   const handleIdCardOCR = async (imageUrl: string, text: string) => {
     try {
+      console.log('📷 Processing ID card image:', imageUrl)
+      
+      // حفظ الصورة في الـ form state
       setValue('idCardImage', imageUrl)
+      
+      // التأكد من أن الصورة محفوظة
+      console.log('✅ ID card image saved to form state')
       
       // استخدام الدالة المحسنة لاستخراج البيانات
       const ocrResult = await extractEgyptianIdCardEnhanced(imageUrl)
@@ -616,20 +630,43 @@ export function CompanySalesPage() {
                 </Label>
                 {idCardImage ? (
                   <div className="space-y-3">
-                    <div className="relative">
+                    <div className="relative group">
                       <img 
                         src={idCardImage} 
-                        alt="ID Card" 
-                        className="w-full h-48 object-cover rounded-lg border"
+                        alt="صورة بطاقة الهوية" 
+                        className="w-full h-48 object-contain rounded-lg border-2 border-green-200 bg-gray-50"
+                        onError={(e) => {
+                          console.error('❌ Error loading ID card image:', idCardImage)
+                          e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPtiu2LfYoyDZgdmKINiq2K3ZhdmK2YQg2KfZhNi12YjYsdipPC90ZXh0Pjwvc3ZnPg=='
+                        }}
                       />
-                      <div className="absolute top-2 right-2">
+                      <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Button
                           type="button"
                           size="sm"
+                          variant="secondary"
                           onClick={() => setOcrStep('id-card')}
+                          className="bg-white/90 hover:bg-white"
                         >
                           <Camera className="h-4 w-4" />
+                          إعادة تصوير
                         </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => {
+                            setValue('idCardImage', '')
+                            setExtractedData({})
+                            toast.info('تم حذف صورة بطاقة الهوية')
+                          }}
+                          className="bg-red-500/90 hover:bg-red-600"
+                        >
+                          حذف
+                        </Button>
+                      </div>
+                      <div className="absolute bottom-2 left-2 bg-green-500/90 text-white px-2 py-1 rounded text-xs">
+                        ✅ تم التصوير
                       </div>
                     </div>
                   </div>
@@ -637,11 +674,11 @@ export function CompanySalesPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    className="w-full h-32 flex-col gap-2"
+                    className="w-full h-32 flex-col gap-2 border-dashed border-2 hover:border-blue-300 hover:bg-blue-50"
                     onClick={() => setOcrStep('id-card')}
                   >
-                    <Camera className="h-8 w-8" />
-                    <span>تصوير بطاقة الهوية</span>
+                    <Camera className="h-8 w-8 text-blue-500" />
+                    <span className="font-medium">تصوير بطاقة الهوية</span>
                     <span className="text-xs text-gray-500">سيتم استخراج البيانات تلقائياً</span>
                   </Button>
                 )}
@@ -650,6 +687,19 @@ export function CompanySalesPage() {
                   <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <p className="text-sm text-yellow-800 arabic-text">
                       <strong>مطلوب:</strong> يجب تصوير بطاقة الهوية قبل المتابعة
+                    </p>
+                  </div>
+                )}
+
+                {/* معلومات إضافية عن الصورة */}
+                {idCardImage && (
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center gap-2 text-sm text-green-800">
+                      <CreditCard className="h-4 w-4" />
+                      <span>تم تصوير بطاقة الهوية بنجاح</span>
+                    </div>
+                    <p className="text-xs text-green-600 mt-1">
+                      يمكنك الآن إكمال باقي البيانات أو إعادة التصوير إذا لزم الأمر
                     </p>
                   </div>
                 )}

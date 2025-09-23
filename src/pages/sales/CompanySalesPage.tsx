@@ -448,6 +448,13 @@ export function CompanySalesPage() {
           salePrice: data.salePrice || selectedItem.salePrice || selectedItem.purchasePrice,
           warehouseId: selectedWarehouse,
           status: 'pending_documents',
+          // الحقول المباشرة للتوافق مع البيع بالنيابة
+          idCardFrontImageUrl: idCardImageUrl,
+          idCardBackImageUrl: null,
+          motorFingerprintImageUrl: selectedItem.motorFingerprintImageUrl || null,
+          chassisNumberImageUrl: selectedItem.chassisNumberImageUrl || null,
+          customerIdImageUrl: idCardImageUrl, // للتوافق مع استعلام العملاء
+          // البنية المحسنة للوثائق
           documents: {
             idCard: {
               imageUrl: idCardImageUrl,

@@ -487,7 +487,7 @@ export function CompanySalesPage() {
             status: 'pending_submission',
             date: serverTimestamp(),
             updatedBy: userData.id,
-            notes: `بيع شركة - المبلغ: ${formatCurrency(data.salePrice || selectedItem.salePrice || selectedItem.purchasePrice)} - الربح: ${formatCurrency((data.salePrice || selectedItem.salePrice || selectedItem.purchasePrice) - selectedItem.purchasePrice)}`
+            notes: 'تم إنشاء طلب تتبع الوثيقة تلقائياً بعد البيع'
           }],
           createdAt: serverTimestamp(),
           createdBy: userData.id,
@@ -496,8 +496,30 @@ export function CompanySalesPage() {
           notes: data.notes || ''
         }
 
-        await addDoc(collection(db, 'document_tracking'), documentTracking)
+        const docTrackingRef = await addDoc(collection(db, 'document_tracking'), documentTracking)
         console.log('✅ Document tracking created successfully')
+        
+        // إرسال إشعار عن إنشاء الوثيقة الجديدة
+        try {
+          await SimpleNotificationSystem.sendNotification({
+            recipientId: 'eJVyY9OwowchKEMlFLrk4MRiiaq2', // المدير الرئيسي
+            title: '📄 تم إنشاء وثيقة جديدة',
+            message: `تم إنشاء وثيقة تتبع جديدة للعميل ${data.customerName} - ${selectedItem.brand} ${selectedItem.model}`,
+            type: 'document_created',
+            actionUrl: `/documents/${docTrackingRef.id}`,
+            senderId: userData.id,
+            senderName: userData.displayName || userData.email || 'موظف بيع',
+            priority: 'medium',
+            data: {
+              documentId: docTrackingRef.id,
+              customerName: data.customerName,
+              motorFingerprint: selectedItem.motorFingerprint,
+              chassisNumber: selectedItem.chassisNumber
+            }
+          })
+        } catch (notificationError) {
+          console.error('Error sending document creation notification:', notificationError)
+        }
       } catch (docError) {
         console.error('Error creating document tracking:', docError)
         // لا نوقف العملية إذا فشل إنشاء تتبع الوثائق

@@ -133,7 +133,13 @@ export function DashboardPage() {
           id: doc.id,
           type: 'sale' as const,
           description: `تم بيع ${data.motorFingerprint || 'موتوسيكل'} للعميل ${data.customerName || 'غير محدد'}`,
-          timestamp: data.createdAt?.toDate() || new Date(),
+          timestamp: data.createdAt && typeof data.createdAt.toDate === 'function' 
+            ? data.createdAt.toDate() 
+            : data.createdAt instanceof Date 
+              ? data.createdAt 
+              : data.createdAt 
+                ? new Date(data.createdAt as any)
+                : new Date(),
           amount: data.salePrice || 0
         }
       })

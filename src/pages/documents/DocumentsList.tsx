@@ -428,14 +428,38 @@ function DocumentCard({ document }: { document: DocumentTracking }) {
                 <h3 className="font-medium text-gray-900 mb-2 arabic-text">التواريخ</h3>
                 <div className="space-y-1">
                   <p className="text-sm text-gray-600 arabic-text">
-                    <span className="font-medium">تاريخ الإنشاء:</span> {formatDate(document.createdAt.toDate())}
+                    <span className="font-medium">تاريخ الإنشاء:</span> {formatDate(
+                      document.createdAt && typeof document.createdAt.toDate === 'function' 
+                        ? document.createdAt.toDate() 
+                        : document.createdAt instanceof Date 
+                          ? document.createdAt 
+                          : document.createdAt 
+                            ? new Date(document.createdAt as any)
+                            : new Date()
+                    )}
                   </p>
                   <p className="text-sm text-gray-600 arabic-text">
-                    <span className="font-medium">آخر تحديث:</span> {formatDate(document.updatedAt.toDate())}
+                    <span className="font-medium">آخر تحديث:</span> {formatDate(
+                      document.updatedAt && typeof document.updatedAt.toDate === 'function' 
+                        ? document.updatedAt.toDate() 
+                        : document.updatedAt instanceof Date 
+                          ? document.updatedAt 
+                          : document.updatedAt 
+                            ? new Date(document.updatedAt as any)
+                            : new Date()
+                    )}
                   </p>
                   {latestStage && (
                     <p className="text-sm text-gray-600 arabic-text">
-                      <span className="font-medium">آخر مرحلة:</span> {formatDate(latestStage.date.toDate())}
+                      <span className="font-medium">آخر مرحلة:</span> {formatDate(
+                        latestStage.date && typeof latestStage.date.toDate === 'function' 
+                          ? latestStage.date.toDate() 
+                          : latestStage.date instanceof Date 
+                            ? latestStage.date 
+                            : latestStage.date 
+                              ? new Date(latestStage.date as any)
+                              : new Date()
+                      )}
                     </p>
                   )}
                 </div>

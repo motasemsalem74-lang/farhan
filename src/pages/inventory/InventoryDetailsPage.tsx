@@ -134,8 +134,20 @@ export function InventoryDetailsPage() {
         // Combine transactions and transfers
         const allTransactions = [...transactions, ...transfersData]
           .sort((a, b) => {
-            const dateA = a.date?.toDate ? a.date.toDate() : (a.date ? new Date(a.date as any) : new Date())
-            const dateB = b.date?.toDate ? b.date.toDate() : (b.date ? new Date(b.date as any) : new Date())
+            const dateA = a.date && typeof a.date.toDate === 'function' 
+              ? a.date.toDate() 
+              : a.date instanceof Date 
+                ? a.date 
+                : a.date 
+                  ? new Date(a.date as any) 
+                  : new Date()
+            const dateB = b.date && typeof b.date.toDate === 'function' 
+              ? b.date.toDate() 
+              : b.date instanceof Date 
+                ? b.date 
+                : b.date 
+                  ? new Date(b.date as any) 
+                  : new Date()
             return dateB.getTime() - dateA.getTime()
           })
         
@@ -338,7 +350,15 @@ export function InventoryDetailsPage() {
                 <div>
                   <p className="font-medium arabic-text">{warehouse?.name}</p>
                   <p className="text-sm text-gray-500 arabic-text">
-                    تاريخ الإدخال: {item.createdAt ? formatDateTime(item.createdAt?.toDate ? item.createdAt.toDate() : new Date(item.createdAt as any)) : 'غير محدد'}
+                    تاريخ الإدخال: {item.createdAt ? formatDateTime(
+                      item.createdAt && typeof item.createdAt.toDate === 'function' 
+                        ? item.createdAt.toDate() 
+                        : item.createdAt instanceof Date 
+                          ? item.createdAt 
+                          : item.createdAt 
+                            ? new Date(item.createdAt as any)
+                            : new Date()
+                    ) : 'غير محدد'}
                   </p>
                 </div>
                 <div className="text-right">
@@ -420,7 +440,15 @@ export function InventoryDetailsPage() {
                             {getTransactionTypeLabel(transaction.type)}
                           </p>
                           <p className="text-sm text-gray-500">
-                            {transaction.date ? formatDateTime(transaction.date?.toDate ? transaction.date.toDate() : new Date(transaction.date as any)) : 'غير محدد'}
+                            {transaction.date ? formatDateTime(
+                              transaction.date && typeof transaction.date.toDate === 'function' 
+                                ? transaction.date.toDate() 
+                                : transaction.date instanceof Date 
+                                  ? transaction.date 
+                                  : transaction.date 
+                                    ? new Date(transaction.date as any)
+                                    : new Date()
+                            ) : 'غير محدد'}
                           </p>
                         </div>
                       </div>

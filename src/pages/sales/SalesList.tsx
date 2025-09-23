@@ -78,7 +78,13 @@ export default function SalesList() {
           id: doc.id,
           type: 'sale_to_customer',
           referenceNumber: data.saleTransactionId || doc.id,
-          date: data.createdAt?.toDate() || new Date(),
+          date: data.createdAt && typeof data.createdAt.toDate === 'function' 
+            ? data.createdAt.toDate() 
+            : data.createdAt instanceof Date 
+              ? data.createdAt 
+              : data.createdAt 
+                ? new Date(data.createdAt as any)
+                : new Date(),
           totalAmount: typeof data.salePrice === 'string' ? parseFloat(data.salePrice) || 0 : (data.salePrice || 0),
           details: {
             customer: {
@@ -100,8 +106,26 @@ export default function SalesList() {
             totalPrice: typeof data.salePrice === 'string' ? parseFloat(data.salePrice) || 0 : (data.salePrice || 0),
             purchasePrice: typeof data.purchasePrice === 'string' ? parseFloat(data.purchasePrice) || 0 : (data.purchasePrice || 0)
           }],
-          createdAt: data.createdAt?.toDate() || new Date(),
-          updatedAt: data.updatedAt?.toDate() || data.createdAt?.toDate() || new Date(),
+          createdAt: data.createdAt && typeof data.createdAt.toDate === 'function' 
+            ? data.createdAt.toDate() 
+            : data.createdAt instanceof Date 
+              ? data.createdAt 
+              : data.createdAt 
+                ? new Date(data.createdAt as any)
+                : new Date(),
+          updatedAt: data.updatedAt && typeof data.updatedAt.toDate === 'function' 
+            ? data.updatedAt.toDate() 
+            : data.updatedAt instanceof Date 
+              ? data.updatedAt 
+              : data.updatedAt 
+                ? new Date(data.updatedAt as any)
+                : data.createdAt && typeof data.createdAt.toDate === 'function' 
+                  ? data.createdAt.toDate() 
+                  : data.createdAt instanceof Date 
+                    ? data.createdAt 
+                    : data.createdAt 
+                      ? new Date(data.createdAt as any)
+                      : new Date(),
           createdBy: data.createdBy || '',
           userId: data.createdBy || '',
           agentId: data.agentId || null,

@@ -279,7 +279,7 @@ export function ManagerAgentSalesPage() {
           status: 'pending_submission',
           date: new Date(),
           updatedBy: userData.id,
-          notes: `بيع بالنيابة عن الوكيل ${agent.name} - نصيب الشركة فقط: ${formatCurrency(companyShare)}`
+          notes: 'تم إنشاء سجل تتبع الوثائق'
         }],
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),

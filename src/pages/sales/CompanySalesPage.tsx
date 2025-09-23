@@ -487,7 +487,7 @@ export function CompanySalesPage() {
             status: 'pending_submission',
             date: new Date(),
             updatedBy: userData.id,
-            notes: 'تم إنشاء طلب تتبع الوثيقة تلقائياً بعد البيع'
+            notes: 'تم إنشاء سجل تتبع الوثائق'
           }],
           createdAt: serverTimestamp(),
           createdBy: userData.id,

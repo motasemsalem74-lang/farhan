@@ -49,6 +49,7 @@ interface SaleFormData {
   customerAddress: string
   notes: string
   idCardImage?: string
+  salePrice?: number
 }
 
 interface ExtractedCustomerData {
@@ -77,6 +78,7 @@ export function CompanySalesPage() {
   const [submitting, setSubmitting] = useState(false)
   const [ocrStep, setOcrStep] = useState<OCRStep>('none')
   const [extractedData, setExtractedData] = useState<ExtractedCustomerData>({})
+  const [customSalePrice, setCustomSalePrice] = useState<number | null>(null)
 
   const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm<SaleFormData>()
   
@@ -223,13 +225,14 @@ export function CompanySalesPage() {
 
   const handleIdCardOCR = async (imageUrl: string, text: string) => {
     try {
-      console.log('📷 Processing ID card image:', imageUrl)
+      console.log('📷 Processing ID card image URL:', imageUrl.substring(0, 50) + '...')
+      console.log('📋 Processing extracted text:', text)
       
-      // حفظ الصورة في الـ form state
+      // حفظ الصورة في الـ form state (التأكد من حفظ الرابط وليس النص)
       setValue('idCardImage', imageUrl)
       
       // التأكد من أن الصورة محفوظة
-      console.log('✅ ID card image saved to form state')
+      console.log('✅ ID card image URL saved to form state')
       
       // استخدام الدالة المحسنة لاستخراج البيانات
       const ocrResult = await extractEgyptianIdCardEnhanced(imageUrl)
@@ -348,10 +351,11 @@ export function CompanySalesPage() {
           chassisNumber: selectedItem.chassisNumber,
           brand: selectedItem.brand,
           model: selectedItem.model,
-          salePrice: selectedItem.salePrice || selectedItem.purchasePrice,
+          salePrice: data.salePrice || selectedItem.salePrice || selectedItem.purchasePrice,
+          originalPrice: selectedItem.salePrice || selectedItem.purchasePrice,
           // لا نحفظ سعر الشراء أو الربح للموظف
         }],
-        totalAmount: selectedItem.salePrice || selectedItem.purchasePrice,
+        totalAmount: data.salePrice || selectedItem.salePrice || selectedItem.purchasePrice,
         notes: data.notes,
         createdAt: serverTimestamp(),
         createdBy: userData.id,
@@ -366,7 +370,7 @@ export function CompanySalesPage() {
         soldAt: serverTimestamp(),
         soldBy: userData.id,
         saleTransactionId: saleRef.id,
-        salePrice: selectedItem.salePrice || selectedItem.purchasePrice
+        salePrice: data.salePrice || selectedItem.salePrice || selectedItem.purchasePrice
       })
 
       // إرسال إشعار للمدير
@@ -374,7 +378,7 @@ export function CompanySalesPage() {
         await SimpleNotificationSystem.sendNotification({
           recipientId: 'eJVyY9OwowchKEMlFLrk4MRiiaq2', // المدير الرئيسي
           title: '🏢 بيعة شركة جديدة',
-          message: `موظف البيع ${userData.displayName || userData.email} أنشأ بيعة للعميل ${data.customerName} بقيمة ${(selectedItem.salePrice || selectedItem.purchasePrice).toLocaleString()} جنيه`,
+          message: `موظف البيع ${userData.displayName || userData.email} أنشأ بيعة للعميل ${data.customerName} بقيمة ${(data.salePrice || selectedItem.salePrice || selectedItem.purchasePrice).toLocaleString()} جنيه`,
           type: 'company_sale',
           actionUrl: `/sales/company/${saleRef.id}`,
           senderId: userData.id,
@@ -383,7 +387,7 @@ export function CompanySalesPage() {
           data: {
             saleId: saleRef.id,
             customerName: data.customerName,
-            totalAmount: selectedItem.salePrice || selectedItem.purchasePrice,
+            totalAmount: data.salePrice || selectedItem.salePrice || selectedItem.purchasePrice,
             itemBrand: selectedItem.brand,
             itemModel: selectedItem.model
           }
@@ -413,7 +417,7 @@ export function CompanySalesPage() {
           chassisNumber: selectedItem.chassisNumber,
           brand: selectedItem.brand,
           model: selectedItem.model,
-          salePrice: selectedItem.salePrice || selectedItem.purchasePrice,
+          salePrice: data.salePrice || selectedItem.salePrice || selectedItem.purchasePrice,
           warehouseId: selectedWarehouse,
           status: 'pending_documents',
           documents: {
@@ -445,6 +449,7 @@ export function CompanySalesPage() {
       setSelectedWarehouse('')
       setSearchTerm('')
       setExtractedData({})
+      setCustomSalePrice(null)
       
     } catch (error) {
       console.error('Error creating sale:', error)
@@ -785,6 +790,65 @@ export function CompanySalesPage() {
                 />
               </div>
 
+              {/* سعر البيع المخصص */}
+              {selectedItem && (
+                <div className="space-y-2">
+                  <Label htmlFor="salePrice" className="flex items-center gap-2">
+                    <span>سعر البيع</span>
+                    <span className="text-xs text-gray-500">
+                      (السعر الافتراضي: {(selectedItem.salePrice || selectedItem.purchasePrice)?.toLocaleString()} جنيه)
+                    </span>
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="salePrice"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      {...register('salePrice', {
+                        valueAsNumber: true,
+                        validate: (value) => {
+                          if (value && selectedItem) {
+                            const minPrice = selectedItem.purchasePrice || 0
+                            if (value < minPrice) {
+                              return `سعر البيع لا يمكن أن يكون أقل من سعر الشراء (${minPrice.toLocaleString()} جنيه)`
+                            }
+                          }
+                          return true
+                        }
+                      })}
+                      placeholder={`السعر الافتراضي: ${(selectedItem.salePrice || selectedItem.purchasePrice)?.toLocaleString()}`}
+                      className="input-rtl"
+                      onChange={(e) => {
+                        const value = parseFloat(e.target.value)
+                        setCustomSalePrice(isNaN(value) ? null : value)
+                      }}
+                    />
+                    <span className="absolute left-3 top-3 text-gray-400 text-sm">جنيه</span>
+                  </div>
+                  {errors.salePrice && (
+                    <p className="text-sm text-destructive arabic-text">{errors.salePrice.message}</p>
+                  )}
+                  {customSalePrice && selectedItem.purchasePrice && customSalePrice < selectedItem.purchasePrice && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <p className="text-sm text-red-800 arabic-text">
+                        ⚠️ <strong>تحذير:</strong> سعر البيع ({customSalePrice.toLocaleString()} جنيه) أقل من سعر الشراء ({selectedItem.purchasePrice.toLocaleString()} جنيه)
+                      </p>
+                      <p className="text-xs text-red-600 mt-1">
+                        هذا سيؤدي إلى خسارة قدرها {(selectedItem.purchasePrice - customSalePrice).toLocaleString()} جنيه
+                      </p>
+                    </div>
+                  )}
+                  {customSalePrice && selectedItem.purchasePrice && customSalePrice > selectedItem.purchasePrice && (
+                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <p className="text-sm text-green-800 arabic-text">
+                        ✅ ربح متوقع: {(customSalePrice - selectedItem.purchasePrice).toLocaleString()} جنيه
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* ملخص البيع */}
               {selectedItem && (
                 <div className="p-4 bg-gray-50 rounded-lg space-y-2">
@@ -797,9 +861,15 @@ export function CompanySalesPage() {
                     <div className="flex justify-between">
                       <span>سعر البيع:</span>
                       <span className="font-medium text-green-600">
-                        {(selectedItem.salePrice || selectedItem.purchasePrice)?.toLocaleString()} جنيه
+                        {(customSalePrice || selectedItem.salePrice || selectedItem.purchasePrice)?.toLocaleString()} جنيه
                       </span>
                     </div>
+                    {customSalePrice && customSalePrice !== (selectedItem.salePrice || selectedItem.purchasePrice) && (
+                      <div className="flex justify-between text-xs text-gray-500">
+                        <span>السعر الأصلي:</span>
+                        <span>{(selectedItem.salePrice || selectedItem.purchasePrice)?.toLocaleString()} جنيه</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

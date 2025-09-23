@@ -485,7 +485,7 @@ export function CompanySalesPage() {
           extractedCustomerData: extractedData,
           stages: [{
             status: 'pending_submission',
-            date: serverTimestamp(),
+            date: new Date(),
             updatedBy: userData.id,
             notes: 'تم إنشاء طلب تتبع الوثيقة تلقائياً بعد البيع'
           }],

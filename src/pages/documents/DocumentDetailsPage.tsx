@@ -634,12 +634,16 @@ export function DocumentDetailsPage() {
               <h3 className="font-medium text-gray-900 mb-3 arabic-text">الصورة المجمعة للوثائق</h3>
               <CompositeImageDisplay
                 compositeImageUrl={(document as any).combinedImageUrl}
-                customerIdImage={(document as any).idCardFrontImageUrl}
-                motorFingerprintImage={(document as any).motorFingerprintImageUrl}
-                chassisNumberImage={(document as any).chassisNumberImageUrl}
+                customerIdImage={(document as any).documents?.idCard?.imageUrl || (document as any).idCardFrontImageUrl}
+                motorFingerprintImage={(document as any).documents?.motorFingerprint?.imageUrl || (document as any).motorFingerprintImageUrl}
+                chassisNumberImage={(document as any).documents?.chassisNumber?.imageUrl || (document as any).chassisNumberImageUrl}
                 customerName={document.customerName || 'عميل'}
                 saleDate={createdDate || new Date()}
-                showRegenerateButton={false}
+                showRegenerateButton={true}
+                onCompositeImageCreated={(newImageUrl) => {
+                  // يمكن إضافة logic لتحديث الصورة المجمعة في قاعدة البيانات
+                  console.log('New composite image created:', newImageUrl)
+                }}
               />
             </div>
           </CardContent>

@@ -197,7 +197,7 @@ export function CustomerInquiryPage() {
             phone: sale.customerPhone || 'غير محدد',
             nationalId: sale.customerNationalId || 'غير محدد',
             address: sale.customerAddress || 'غير محدد',
-            idImageUrl: sale.customerIdImageUrl,
+            idImageUrl: sale.customerIdImageUrl || (sale as any).documents?.idCard?.imageUrl || null,
             totalPurchases: 1,
             totalSpent: salePrice,
             lastPurchaseDate: sale.createdAt,
@@ -707,20 +707,28 @@ export function CustomerInquiryPage() {
                             <div className="space-y-2">
                               <h4 className="font-semibold text-gray-900 arabic-text">الصور</h4>
                               <div className="grid grid-cols-2 gap-2">
-                                {sale.motorFingerprintImageUrl && (
+                                {(sale.motorFingerprintImageUrl || (sale as any).documents?.motorFingerprint?.imageUrl) && (
                                   <img 
-                                    src={sale.motorFingerprintImageUrl} 
+                                    src={sale.motorFingerprintImageUrl || (sale as any).documents?.motorFingerprint?.imageUrl} 
                                     alt="صورة المحرك" 
                                     className="w-full h-16 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
-                                    onClick={() => setSelectedImage(sale.motorFingerprintImageUrl!)}
+                                    onClick={() => setSelectedImage(sale.motorFingerprintImageUrl || (sale as any).documents?.motorFingerprint?.imageUrl)}
                                   />
                                 )}
-                                {sale.chassisNumberImageUrl && (
+                                {(sale.chassisNumberImageUrl || (sale as any).documents?.chassisNumber?.imageUrl) && (
                                   <img 
-                                    src={sale.chassisNumberImageUrl} 
+                                    src={sale.chassisNumberImageUrl || (sale as any).documents?.chassisNumber?.imageUrl} 
                                     alt="رقم الشاسيه" 
                                     className="w-full h-16 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
-                                    onClick={() => setSelectedImage(sale.chassisNumberImageUrl!)}
+                                    onClick={() => setSelectedImage(sale.chassisNumberImageUrl || (sale as any).documents?.chassisNumber?.imageUrl)}
+                                  />
+                                )}
+                                {((sale as any).documents?.idCard?.imageUrl || sale.customerIdImageUrl) && (
+                                  <img 
+                                    src={(sale as any).documents?.idCard?.imageUrl || sale.customerIdImageUrl} 
+                                    alt="بطاقة الهوية" 
+                                    className="w-full h-16 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
+                                    onClick={() => setSelectedImage((sale as any).documents?.idCard?.imageUrl || sale.customerIdImageUrl)}
                                   />
                                 )}
                               </div>

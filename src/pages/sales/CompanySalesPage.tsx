@@ -408,9 +408,30 @@ export function CompanySalesPage() {
         let combinedImageUrl = ''
         
         // إنشاء صورة مركبة للوثائق
-        // للآن، سنستخدم صورة بطاقة الهوية كصورة مجمعة
-        // يمكن تطوير هذا لاحقاً لإنشاء صورة مركبة حقيقية
-        combinedImageUrl = idCardImageUrl
+        try {
+          const { createCompositeImage } = await import('@/lib/imageComposer')
+          combinedImageUrl = await createCompositeImage({
+            customerIdImage: idCardImageUrl,
+            motorFingerprintImage: selectedItem.motorFingerprintImageUrl || undefined,
+            chassisNumberImage: selectedItem.chassisNumberImageUrl || undefined,
+            customerName: data.customerName,
+            saleDate: new Date().toISOString()
+          })
+          
+          // رفع الصورة المجمعة إلى Cloudinary
+          if (combinedImageUrl) {
+            const response = await fetch(combinedImageUrl)
+            const blob = await response.blob()
+            combinedImageUrl = await uploadImageToCloudinary(
+              combinedImageUrl,
+              `composite-${data.customerNationalId}-${Date.now()}.jpg`
+            )
+          }
+        } catch (compositeError) {
+          console.error('Error generating composite image:', compositeError)
+          // استخدام صورة بطاقة الهوية كـ fallback
+          combinedImageUrl = idCardImageUrl
+        }
 
         const documentTracking = {
           transactionId,

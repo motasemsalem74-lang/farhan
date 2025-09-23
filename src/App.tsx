@@ -18,7 +18,6 @@ import { DashboardPage } from './pages/DashboardPage'
 import { InventoryPage } from './pages/inventory/InventoryPage'
 import { SalesPage } from './pages/sales/SalesPage'
 import { CompanySalesPage } from './pages/sales/CompanySalesPage'
-import CreateSalePageNew from './pages/sales/CreateSalePageNew'
 import { AgentsPage } from './pages/agents/AgentsPage'
 import { AgentMainPage } from './pages/agents/AgentMainPage'
 import { DocumentTrackingPage } from './pages/documents/DocumentTrackingPage'
@@ -309,18 +308,19 @@ function App() {
             <Route path="/" element={<DashboardPage />} />
             
             {/* Inventory Management */}
+            <Route path="/inventory/*" element={<InventoryPage />} />
             
-{/* Sales Management */}
-<Route path="/sales/*" element={<SalesPage />} />
+            {/* Sales Management */}
+            <Route path="/sales/*" element={<SalesPage />} />
             
-{/* Company Sales (Sales Employee only) */}
-<Route path="/sales/create" element={<CompanySalesPage />} />
+            {/* Company Sales (Sales Employee only) */}
+            <Route path="/sales/create" element={<CompanySalesPage />} />
             
-{/* Test New Sales Page */}
-<Route path="/sales/create-new" element={<CreateSalePageNew />} />
+            {/* Agent Management */}
+            <Route path="/agents/*" element={<AgentsPage />} />
             
-{/* Agent Management */}
-<Route path="/agents/*" element={<AgentsPage />} />
+            {/* Agent Online Dashboard */}
+            <Route path="/agent/*" element={<AgentMainPage />} />
             
             {/* Document Tracking */}
             <Route path="/documents/*" element={<DocumentTrackingPage />} />

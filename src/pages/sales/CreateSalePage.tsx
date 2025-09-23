@@ -12,7 +12,7 @@ import {
   Plus,
   Trash2
 } from 'lucide-react'
-import { addDoc, collection, serverTimestamp, doc, updateDoc, query, where, getDocs, setDoc } from 'firebase/firestore'
+import { addDoc, collection, serverTimestamp, doc, updateDoc, query, where, getDocs } from 'firebase/firestore'
 import { uploadToCloudinary, validateImageFile, compressImage } from '@/lib/cloudinary'
 import { useAuthState } from 'react-firebase-hooks/auth'
 
@@ -52,9 +52,6 @@ interface SaleItem {
 }
 
 export default function CreateSalePage() {
-  console.log('🚨 [CRITICAL UPDATE] CreateSalePage component loaded at:', new Date().toISOString())
-  console.log('🚨 [CRITICAL UPDATE] This confirms the latest CreateSalePage.tsx is being used!')
-  
   const navigate = useNavigate()
   const [user] = useAuthState(auth)
   const { userData } = useUserData(user?.uid)
@@ -75,7 +72,7 @@ export default function CreateSalePage() {
   const [loading, setLoading] = useState(false)
   const [itemSearchQuery, setItemSearchQuery] = useState('')
   const [ocrStep, setOcrStep] = useState<OCRStep>('none')
-  const [extractedCustomerData, setExtractedCustomerData] = useState<ExtractedCustomerData>({})
+  const [extractedData, setExtractedData] = useState<ExtractedCustomerData>({})
 
   const {
     register,
@@ -98,91 +95,38 @@ export default function CreateSalePage() {
   const customerData = watch('customer')
 
   useEffect(() => {
-    console.log('🚨 [CRITICAL UPDATE] CreateSalePage useEffect triggered at:', new Date().toISOString())
-    console.log('🚨 [CRITICAL UPDATE] Latest code is running - warehouses will load now!')
-    
     if (userData) {
       loadWarehouses()
       loadAvailableItems()
     }
   }, [userData])
 
-  // Reload items when warehouse selection changes
-  useEffect(() => {
-    if (userData && warehouses.length > 0) {
-      loadAvailableItems()
-    }
-  }, [selectedWarehouseId])
-
   const loadWarehouses = async () => {
     try {
-      console.log('🏪 [SALES CREATE] Loading institution warehouses...')
-      console.log('🚨 [FORCE UPDATE] Code updated at:', new Date().toISOString())
-      console.log('🚨 [FORCE UPDATE] This message confirms the latest code is running!')
+      // Load warehouses from Firebase
+      const warehousesQuery = query(
+        collection(db, 'warehouses'),
+        where('isActive', '==', true)
+      )
       
-      // تحميل جميع المخازن
-      const warehousesQuery = query(collection(db, 'warehouses'))
       const warehousesSnapshot = await getDocs(warehousesQuery)
-      const allWarehouses = warehousesSnapshot.docs.map(doc => ({
+      const warehousesData = warehousesSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Warehouse[]
       
-      console.log('🏪 [SALES CREATE] ALL warehouses in database:', allWarehouses.length)
-      console.log('🏪 [SALES CREATE] All warehouses details:', allWarehouses.map(w => ({
-        id: w.id,
-        name: w.name,
-        type: w.type
-      })))
+      setWarehouses(warehousesData)
       
-      // فلترة مخازن المؤسسة فقط - المخزن الرئيسي ومخزن المعرض
-      const institutionWarehouses = allWarehouses.filter(w => {
-        const name = w.name?.toLowerCase() || ''
-        const type = w.type?.toLowerCase() || ''
-        
-        return (
-          // حسب النوع
-          type === 'main' || 
-          type === 'showroom' ||
-          type === 'institution' ||
-          // حسب الاسم
-          name.includes('رئيسي') || 
-          name.includes('معرض') ||
-          name.includes('الرئيسي') ||
-          name.includes('المعرض') ||
-          name.includes('مؤسسة') ||
-          name.includes('المؤسسة')
-        )
-      })
-      
-      console.log('🏪 [SALES CREATE] Institution warehouses found:', institutionWarehouses.length)
-      console.log('🏪 [SALES CREATE] Institution warehouses:', institutionWarehouses.map(w => ({
-        id: w.id,
-        name: w.name,
-        type: w.type
-      })))
-      
-      setWarehouses(institutionWarehouses)
-      
-      if (institutionWarehouses.length === 0) {
-        toast.error('لا توجد مخازن مؤسسة متاحة (المخزن الرئيسي أو مخزن المعرض)')
-        console.warn('🏪 [SALES CREATE] No institution warehouses found')
-      } else {
-        toast.success(`تم تحميل ${institutionWarehouses.length} مخزن مؤسسة`)
-        console.log('🏪 [SALES CREATE] Institution warehouses loaded successfully')
-      }
-      
+      console.log('✅ Loaded warehouses:', warehousesData.length)
     } catch (error) {
-      console.error('🏪 [SALES CREATE] Error loading warehouses:', error)
+      console.error('Error loading warehouses:', error)
       toast.error('خطأ في تحميل المخازن')
     }
   }
 
   const loadAvailableItems = async () => {
     try {
-      console.log('📦 [SALES CREATE] Loading available items from institution warehouses...')
-      
-      // تحميل جميع الأصناف المتاحة
+      // Load items from main warehouse and showroom only
       const inventoryQuery = query(
         collection(db, 'inventory_items'),
         where('status', '==', 'available')
@@ -194,34 +138,80 @@ export default function CreateSalePage() {
         ...doc.data()
       })) as InventoryItem[]
       
-      console.log('📦 [SALES CREATE] Total available items in database:', allItems.length)
-      
-      // فلترة الأصناف من مخازن المؤسسة فقط (استخدام المخازن المحملة مسبقاً)
-      const institutionWarehouseIds = warehouses.map(w => w.id)
-      
-      const institutionItems = allItems.filter(item => 
-        institutionWarehouseIds.includes(item.currentWarehouseId)
+      // Get warehouses to filter by type
+      const warehousesQuery = query(
+        collection(db, 'warehouses'),
+        where('isActive', '==', true)
       )
+      const warehousesSnapshot = await getDocs(warehousesQuery)
+      const warehousesData = warehousesSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Warehouse[]
       
-      console.log('📦 [SALES CREATE] Items from institution warehouses:', {
-        totalItems: allItems.length,
-        institutionWarehouses: warehouses.length,
-        institutionWarehouseIds,
-        institutionItems: institutionItems.length
+      // Filter items from main warehouse and showroom only
+      const mainAndShowroomWarehouses = warehousesData.filter(w => {
+        const name = w.name?.toLowerCase() || ''
+        const type = w.type?.toLowerCase() || ''
+        
+        return (
+          // Check by type
+          type === 'main' || 
+          type === 'showroom' ||
+          type === 'institution' ||
+          // Check by name (Arabic)
+          name.includes('رئيسي') || 
+          name.includes('معرض') ||
+          name.includes('الرئيسي') ||
+          name.includes('المعرض') ||
+          name.includes('مؤسسة') ||
+          name.includes('المؤسسة') ||
+          // Check by name (English)
+          name.includes('main') ||
+          name.includes('showroom') ||
+          name.includes('institution') ||
+          name.includes('company')
+        )
       })
       
-      setAvailableItems(institutionItems)
+      const warehouseIds = mainAndShowroomWarehouses.map(w => w.id)
       
-      if (institutionItems.length === 0) {
-        console.warn('📦 [SALES CREATE] No items found in institution warehouses')
-        toast.error('لا توجد أصناف متاحة في مخازن المؤسسة')
-      } else {
-        console.log('📦 [SALES CREATE] Items loaded successfully from institution warehouses')
-        toast.success(`تم تحميل ${institutionItems.length} صنف من مخازن المؤسسة`)
+      let filteredItems = allItems.filter(item => 
+        warehouseIds.includes(item.currentWarehouseId)
+      )
+      
+      // If no items found in main/showroom warehouses, don't show agent items
+      if (filteredItems.length === 0 && allItems.length > 0) {
+        console.warn('⚠️ No items found in main/showroom warehouses')
+        
+        // Only show items from non-agent warehouses as fallback
+        const nonAgentWarehouses = warehousesData.filter(w => w.type !== 'agent')
+        const nonAgentWarehouseIds = nonAgentWarehouses.map(w => w.id)
+        
+        const nonAgentItems = allItems.filter(item => 
+          nonAgentWarehouseIds.includes(item.currentWarehouseId)
+        )
+        
+        if (nonAgentItems.length > 0) {
+          filteredItems = nonAgentItems
+          console.log('🔄 Using fallback - showing items from non-agent warehouses only:', nonAgentItems.length)
+        } else {
+          console.log('❌ No items available in any non-agent warehouse')
+        }
       }
       
+      console.log('✅ Loaded items from main/showroom warehouses:', {
+        totalItems: allItems.length,
+        mainShowroomWarehouses: mainAndShowroomWarehouses.length,
+        filteredItems: filteredItems.length,
+        warehouseIds
+      })
+      
+      setAvailableItems(filteredItems)
+      setWarehouses(warehousesData)
+      
     } catch (error) {
-      console.error('📦 [SALES CREATE] Error loading available items:', error)
+      console.error('Error loading available items:', error)
       toast.error('خطأ في تحميل المنتجات المتاحة')
     }
   }
@@ -418,27 +408,27 @@ export default function CreateSalePage() {
         // Set form values with extracted data
         if (data.name) {
           setValue('customer.name', data.name)
-          setExtractedCustomerData(prev => ({ ...prev, name: data.name }))
+          setExtractedData(prev => ({ ...prev, name: data.name }))
         }
         if (data.nationalId) {
           setValue('customer.nationalId', data.nationalId)
-          setExtractedCustomerData(prev => ({ ...prev, nationalId: data.nationalId }))
+          setExtractedData(prev => ({ ...prev, nationalId: data.nationalId }))
         }
         if (data.address) {
           setValue('customer.address', data.address)
-          setExtractedCustomerData(prev => ({ ...prev, address: data.address }))
+          setExtractedData(prev => ({ ...prev, address: data.address }))
         }
         if (data.phone) {
           setValue('customer.phone', data.phone)
-          setExtractedCustomerData(prev => ({ ...prev, phone: data.phone }))
+          setExtractedData(prev => ({ ...prev, phone: data.phone }))
         }
         
         // Store additional extracted data
         if (data.birthDate) {
-          setExtractedCustomerData(prev => ({ ...prev, birthDate: data.birthDate }))
+          setExtractedData(prev => ({ ...prev, birthDate: data.birthDate }))
         }
         if (data.gender) {
-          setExtractedCustomerData(prev => ({ ...prev, gender: data.gender }))
+          setExtractedData(prev => ({ ...prev, gender: data.gender }))
         }
         
         toast.success('تم استخراج بيانات بطاقة الهوية بنجاح')
@@ -503,15 +493,14 @@ export default function CreateSalePage() {
 
   // Commission functionality removed - all profits go to institution
 
-  // Filter items by selected warehouse and search query
   const filteredItems = availableItems.filter(item => {
-    // Filter by warehouse first
+    if (!itemSearchQuery) return false
+    
+    // Filter by selected warehouse
     if (selectedWarehouseId !== 'all' && item.currentWarehouseId !== selectedWarehouseId) {
       return false
     }
     
-    // Then filter by search query
-    if (!itemSearchQuery) return false
     const query = itemSearchQuery.toLowerCase()
     return (
       item.motorFingerprint.toLowerCase().includes(query) ||
@@ -623,15 +612,15 @@ export default function CreateSalePage() {
                 )}
 
                 {/* Display extracted customer data */}
-                {(extractedCustomerData.birthDate || extractedCustomerData.gender) && (
+                {(extractedData.birthDate || extractedData.gender) && (
                   <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                     <h4 className="text-sm font-medium text-green-900 mb-2 arabic-text">بيانات إضافية من بطاقة الهوية:</h4>
                     <div className="space-y-1 text-sm text-green-800">
-                      {extractedCustomerData.birthDate && (
-                        <p>تاريخ الميلاد: {extractedCustomerData.birthDate}</p>
+                      {extractedData.birthDate && (
+                        <p>تاريخ الميلاد: {extractedData.birthDate}</p>
                       )}
-                      {extractedCustomerData.gender && (
-                        <p>النوع: {extractedCustomerData.gender}</p>
+                      {extractedData.gender && (
+                        <p>النوع: {extractedData.gender}</p>
                       )}
                     </div>
                   </div>
@@ -712,42 +701,21 @@ export default function CreateSalePage() {
               <CardContent className="space-y-4">
                 {/* Warehouse Selection */}
                 <div className="space-y-2">
-                  <Label>اختيار المخزن</Label>
+                  <Label>المخزن</Label>
                   <select
                     value={selectedWarehouseId}
-                    onChange={(e) => {
-                      console.log('🏪 [SALES CREATE] Warehouse selection changed:', e.target.value)
-                      setSelectedWarehouseId(e.target.value)
-                    }}
+                    onChange={(e) => setSelectedWarehouseId(e.target.value)}
                     className="w-full form-input input-rtl arabic-text"
                   >
                     <option value="all">جميع المخازن المتاحة</option>
-                    {warehouses.length === 0 ? (
-                      <option disabled>جاري تحميل المخازن...</option>
-                    ) : (
-                      warehouses.map(warehouse => {
-                        console.log('🏪 [SALES CREATE] Rendering warehouse option:', warehouse.name)
-                        return (
-                          <option key={warehouse.id} value={warehouse.id}>
-                            {warehouse.name}
-                          </option>
-                        )
-                      })
-                    )}
+                    {warehouses
+                      .filter(w => w.type === 'main' || w.type === 'showroom' || w.name?.toLowerCase().includes('رئيسي') || w.name?.toLowerCase().includes('معرض'))
+                      .map(warehouse => (
+                        <option key={warehouse.id} value={warehouse.id}>
+                          {warehouse.name}
+                        </option>
+                      ))}
                   </select>
-                  
-                  {/* Debug info for warehouses */}
-                  {warehouses.length > 0 && (
-                    <p className="text-xs text-gray-500">
-                      تم تحميل {warehouses.length} مخزن متاح
-                    </p>
-                  )}
-                  
-                  {warehouses.length === 0 && (
-                    <p className="text-xs text-red-500">
-                      لم يتم العثور على مخازن. يرجى التأكد من وجود مخازن نشطة في النظام.
-                    </p>
-                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -771,9 +739,6 @@ export default function CreateSalePage() {
                                 <p className="font-medium arabic-text">{item.brand} {item.model}</p>
                                 <p className="text-sm text-gray-600">{item.motorFingerprint}</p>
                                 <p className="text-sm text-gray-500">{formatCurrency(item.purchasePrice)}</p>
-                                <p className="text-xs text-gray-400">
-                                  المخزن: {warehouses.find(w => w.id === item.currentWarehouseId)?.name || 'غير محدد'}
-                                </p>
                               </div>
                               <Button
                                 type="button"
@@ -801,10 +766,14 @@ export default function CreateSalePage() {
                 {!itemSearchQuery && availableItems.length > 0 && (
                   <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                     <p className="text-sm text-blue-800 arabic-text">
-                      <strong>متاح:</strong> {availableItems.length} منتج في المخازن المحددة
+                      <strong>متاح:</strong> {
+                        selectedWarehouseId === 'all' 
+                          ? `${availableItems.length} منتج في جميع المخازن المتاحة`
+                          : `${availableItems.filter(item => item.currentWarehouseId === selectedWarehouseId).length} منتج في المخزن المحدد`
+                      }
                     </p>
                     <p className="text-xs text-blue-600 arabic-text mt-1">
-                      اختر المخزن وابدأ بالبحث لإظهار المنتجات المتاحة
+                      ابدأ بالبحث لإظهار المنتجات المتاحة
                     </p>
                   </div>
                 )}
@@ -812,7 +781,7 @@ export default function CreateSalePage() {
                 {availableItems.length === 0 && (
                   <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <p className="text-sm text-yellow-800 arabic-text">
-                      <strong>تنبيه:</strong> لا توجد منتجات متاحة في المخازن المحددة
+                      <strong>تنبيه:</strong> لا توجد منتجات متاحة في المخزن الرئيسي أو المعرض
                     </p>
                     <p className="text-xs text-yellow-600 arabic-text mt-1">
                       يرجى التأكد من وجود منتجات في المخازن المناسبة

@@ -123,10 +123,10 @@ export function SecurityProvider({ children }: SecurityProviderProps) {
         sessionId: getSessionId()
       }
 
-      // Log to security collection - DISABLED
-      // await setDoc(doc(db, 'security_logs', `${user.uid}_${Date.now()}`), securityLog)
+      // Log to security collection
+      await setDoc(doc(db, 'security_logs', `${user.uid}_${Date.now()}`), securityLog)
       
-      console.log('Security event logged (local only):', event.type)
+      console.log('Security event logged:', event.type)
     } catch (error) {
       console.error('Failed to log security event:', error)
     }

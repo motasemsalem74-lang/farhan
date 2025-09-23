@@ -51,9 +51,9 @@ interface SaleItem {
   commissionPercentage?: number
 }
 
-export default function CreateSalePageFixed() {
-  console.log('🚨 [FIXED PAGE] CreateSalePageFixed component loaded at:', new Date().toISOString())
-  console.log('🚨 [FIXED PAGE] This is the working version with all functionality!')
+export default function CreateSalePage() {
+  console.log('🚨 [CRITICAL UPDATE] CreateSalePage component loaded at:', new Date().toISOString())
+  console.log('🚨 [CRITICAL UPDATE] This confirms the latest CreateSalePage.tsx is being used!')
   
   const navigate = useNavigate()
   const [user] = useAuthState(auth)

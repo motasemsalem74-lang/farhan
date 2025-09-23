@@ -26,8 +26,8 @@ import {
 
 import { db, auth } from '@/firebase/firebase-config.template'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/Input'
+import { Label } from '@/components/ui/Label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { useUserData } from '@/hooks/useUserData'
@@ -79,23 +79,59 @@ export function CompanySalesPage() {
     try {
       setLoading(true)
       
-      // تحميل المخازن - موظف البيع يرى مخازن الشركة فقط
+      // تحميل جميع المخازن النشطة
       const warehousesQuery = query(
         collection(db, 'warehouses'),
-        where('agentId', '==', null) // مخازن الشركة فقط
+        where('isActive', '==', true)
       )
       
       const warehousesSnapshot = await getDocs(warehousesQuery)
-      const warehousesData = warehousesSnapshot.docs.map(doc => ({
+      const allWarehouses = warehousesSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Warehouse[]
       
-      setWarehouses(warehousesData)
+      // فلترة المخازن لإظهار المخازن الرئيسية والمعارض فقط
+      const companyWarehouses = allWarehouses.filter(warehouse => {
+        const name = warehouse.name?.toLowerCase() || ''
+        const type = warehouse.type?.toLowerCase() || ''
+        
+        return (
+          // Check by type
+          type === 'main' || 
+          type === 'showroom' ||
+          type === 'institution' ||
+          // Check by name (Arabic)
+          name.includes('رئيسي') || 
+          name.includes('معرض') ||
+          name.includes('الرئيسي') ||
+          name.includes('المعرض') ||
+          name.includes('مؤسسة') ||
+          name.includes('المؤسسة') ||
+          // Check by name (English)
+          name.includes('main') ||
+          name.includes('showroom') ||
+          name.includes('institution') ||
+          name.includes('company') ||
+          // Not agent warehouses
+          !warehouse.agentId
+        )
+      })
+      
+      setWarehouses(companyWarehouses)
+      
+      console.log('✅ Loaded company warehouses:', {
+        total: allWarehouses.length,
+        company: companyWarehouses.length,
+        warehouses: companyWarehouses.map(w => ({ id: w.id, name: w.name, type: w.type }))
+      })
       
       // اختيار أول مخزن تلقائياً
-      if (warehousesData.length > 0) {
-        setSelectedWarehouse(warehousesData[0].id)
+      if (companyWarehouses.length > 0) {
+        setSelectedWarehouse(companyWarehouses[0].id)
+      } else {
+        console.warn('⚠️ No company warehouses found')
+        toast.warning('لا توجد مخازن متاحة للشركة')
       }
       
     } catch (error) {

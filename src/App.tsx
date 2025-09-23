@@ -307,14 +307,14 @@ function App() {
             {/* Dashboard */}
             <Route path="/" element={<DashboardPage />} />
             
-            {/* Inventory Management */}
-            <Route path="/inventory/*" element={<InventoryPage />} />
+            {/* Company Sales (Sales Employee only) - Must come before /sales/* */}
+            <Route path="/sales/create" element={<CompanySalesPage />} />
             
             {/* Sales Management */}
             <Route path="/sales/*" element={<SalesPage />} />
             
-            {/* Company Sales (Sales Employee only) */}
-            <Route path="/sales/create" element={<CompanySalesPage />} />
+            {/* Inventory Management */}
+            <Route path="/inventory/*" element={<InventoryPage />} />
             
             {/* Agent Management */}
             <Route path="/agents/*" element={<AgentsPage />} />

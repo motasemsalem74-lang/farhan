@@ -25,6 +25,17 @@ import { toast } from 'sonner'
 
 import { db, auth } from '@/firebase/firebase-config.template'
 import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { Label } from '@/components/ui/Label'
+import { Textarea } from '@/components/ui/Textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { CompositeImageDisplay } from '@/components/ui/CompositeImageDisplay'
+import { useUserData } from '@/hooks/useUserData'
+import { SimpleNotificationSystem } from '@/lib/simpleNotifications'
+import { formatDate, isAdmin, isSuperAdmin, cn } from '@/lib/utils'
+import { DocumentTracking } from '@/types'
 import { cva, type VariantProps } from "class-variance-authority"
 
 // Badge component inline
@@ -48,18 +59,6 @@ interface BadgeProps extends React.HTMLAttributes<HTMLDivElement>, VariantProps<
 function Badge({ className, variant, ...props }: BadgeProps) {
   return <div className={cn(badgeVariants({ variant }), className)} {...props} />
 }
-import { Input } from '@/components/ui/Input'
-import { Label } from '@/components/ui/Label'
-import { Textarea } from '@/components/ui/Textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
-import { CompositeImageDisplay } from '@/components/ui/CompositeImageDisplay'
-import { useUserData } from '@/hooks/useUserData'
-import { SimpleNotificationSystem } from '@/lib/simpleNotifications'
-import { formatDate, isAdmin, isSuperAdmin } from '@/lib/utils'
-import { cn } from '@/lib/utils'
-import { DocumentTracking } from '@/types'
 
 interface DocumentStatusHistory {
   id: string

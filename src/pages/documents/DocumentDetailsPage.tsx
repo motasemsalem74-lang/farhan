@@ -50,8 +50,8 @@ function Badge({ className, variant, ...props }: BadgeProps) {
 }
 import { Input } from '@/components/ui/Input'
 import { Label } from '@/components/ui/Label'
-import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/Textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { CompositeImageDisplay } from '@/components/ui/CompositeImageDisplay'

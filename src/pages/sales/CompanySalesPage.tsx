@@ -21,7 +21,9 @@ import {
   User,
   Phone,
   MapPin,
-  Save
+  Save,
+  Camera,
+  CreditCard
 } from 'lucide-react'
 
 import { db, auth } from '@/firebase/firebase-config.template'
@@ -35,6 +37,10 @@ import { canOnlySellFromCompany, canViewProfits } from '@/lib/permissions'
 import { SimpleNotificationSystem } from '@/lib/simpleNotifications'
 import { generateTransactionId } from '@/lib/utils'
 import { InventoryItem, Warehouse } from '@/types'
+import { ImprovedCameraOCR } from '@/components/ui/ImprovedCameraOCR'
+import { uploadToCloudinary, validateImageFile, compressImage } from '@/lib/cloudinary'
+import { createCompositeImage } from '@/lib/imageComposer'
+import { extractEgyptianIdCardEnhanced } from '@/lib/enhancedOCR'
 
 interface SaleFormData {
   customerName: string
@@ -42,7 +48,19 @@ interface SaleFormData {
   customerNationalId: string
   customerAddress: string
   notes: string
+  idCardImage?: string
 }
+
+interface ExtractedCustomerData {
+  name?: string
+  nationalId?: string
+  address?: string
+  phone?: string
+  birthDate?: string
+  gender?: string
+}
+
+type OCRStep = 'none' | 'id-card'
 
 export function CompanySalesPage() {
   const navigate = useNavigate()
@@ -57,8 +75,12 @@ export function CompanySalesPage() {
   const [loading, setLoading] = useState(true)
   const [loadingItems, setLoadingItems] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [ocrStep, setOcrStep] = useState<OCRStep>('none')
+  const [extractedData, setExtractedData] = useState<ExtractedCustomerData>({})
 
-  const { register, handleSubmit, formState: { errors }, reset } = useForm<SaleFormData>()
+  const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm<SaleFormData>()
+  
+  const idCardImage = watch('idCardImage')
 
   // التحقق من الصلاحيات
   const canSeeProfit = canViewProfits(userData?.role || '')
@@ -166,6 +188,90 @@ export function CompanySalesPage() {
     }
   }
 
+  // دوال تصوير بطاقة الهوية
+  const uploadImageToCloudinary = async (imageDataUrl: string, filename: string): Promise<string> => {
+    try {
+      const response = await fetch(imageDataUrl)
+      const blob = await response.blob()
+      
+      const file = new File([blob], filename, { type: blob.type })
+      const validation = validateImageFile(file)
+      if (!validation.valid) {
+        throw new Error(validation.error)
+      }
+      
+      const compressedBlob = await compressImage(file, 0.8)
+      const result = await uploadToCloudinary(compressedBlob, {
+        folder: 'customers',
+        tags: ['customer', 'id-card']
+      })
+      
+      return result.secure_url
+    } catch (error) {
+      console.error('Error uploading to Cloudinary:', error)
+      throw error
+    }
+  }
+
+  const handleIdCardOCR = async (imageUrl: string, text: string) => {
+    try {
+      setValue('idCardImage', imageUrl)
+      
+      const ocrResult = await extractEgyptianIdCardEnhanced(imageUrl)
+      
+      if (ocrResult.success && ocrResult.extractedData) {
+        const data = ocrResult.extractedData
+        
+        if (data.name) {
+          setValue('customerName', data.name)
+          setExtractedData(prev => ({ ...prev, name: data.name }))
+        }
+        if (data.nationalId) {
+          setValue('customerNationalId', data.nationalId)
+          setExtractedData(prev => ({ ...prev, nationalId: data.nationalId }))
+        }
+        if (data.address) {
+          setValue('customerAddress', data.address)
+          setExtractedData(prev => ({ ...prev, address: data.address }))
+        }
+        if (data.phone) {
+          setValue('customerPhone', data.phone)
+          setExtractedData(prev => ({ ...prev, phone: data.phone }))
+        }
+        
+        if (data.birthDate) {
+          setExtractedData(prev => ({ ...prev, birthDate: data.birthDate }))
+        }
+        if (data.gender) {
+          setExtractedData(prev => ({ ...prev, gender: data.gender }))
+        }
+        
+        toast.success('تم استخراج بيانات بطاقة الهوية بنجاح')
+      } else {
+        const lines = text.split('\n').map(line => line.trim()).filter(line => line)
+        
+        for (const line of lines) {
+          const nationalIdMatch = line.match(/\d{14}/)
+          if (nationalIdMatch) {
+            setValue('customerNationalId', nationalIdMatch[0])
+            break
+          }
+        }
+        
+        toast.info('تم تصوير بطاقة الهوية - يرجى مراجعة البيانات المستخرجة')
+      }
+    } catch (error) {
+      console.error('Error processing ID card:', error)
+      toast.error('خطأ في معالجة بطاقة الهوية')
+    } finally {
+      setOcrStep('none')
+    }
+  }
+
+  const handleCancelOCR = () => {
+    setOcrStep('none')
+  }
+
   const filteredItems = inventoryItems.filter(item =>
     item.motorFingerprint?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.chassisNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -179,8 +285,19 @@ export function CompanySalesPage() {
       return
     }
 
+    if (!data.idCardImage) {
+      toast.error('يرجى تصوير بطاقة الهوية')
+      return
+    }
+
     try {
       setSubmitting(true)
+      
+      // رفع صورة بطاقة الهوية
+      const idCardImageUrl = await uploadImageToCloudinary(
+        data.idCardImage,
+        `id-card-${data.customerNationalId}-${Date.now()}.jpg`
+      )
       
       const transactionId = generateTransactionId('company_sale')
       const invoiceNumber = `COMP-${Date.now()}`
@@ -242,19 +359,66 @@ export function CompanySalesPage() {
           }
         })
       } catch (notificationError) {
-        console.error('Failed to send notification:', notificationError)
+        console.error('Error sending notification:', notificationError)
       }
 
-      toast.success('تم إنشاء فاتورة البيع بنجاح')
-      
-      // إعادة تعيين النموذج
+      // إنشاء تتبع الوثائق
+      try {
+        let combinedImageUrl = ''
+        
+        // إنشاء صورة مركبة للوثائق
+        if (idCardImageUrl) {
+          combinedImageUrl = idCardImageUrl // استخدام الصورة مباشرة للآن
+        }
+
+        const documentTracking = {
+          transactionId,
+          transactionType: 'company_sale',
+          customerId: data.customerNationalId,
+          customerName: data.customerName,
+          customerPhone: data.customerPhone,
+          customerAddress: data.customerAddress,
+          inventoryItemId: selectedItem.id,
+          motorFingerprint: selectedItem.motorFingerprint,
+          chassisNumber: selectedItem.chassisNumber,
+          brand: selectedItem.brand,
+          model: selectedItem.model,
+          salePrice: selectedItem.salePrice || selectedItem.purchasePrice,
+          warehouseId: selectedWarehouse,
+          status: 'pending_documents',
+          documents: {
+            idCard: {
+              imageUrl: idCardImageUrl,
+              status: 'uploaded',
+              uploadedAt: serverTimestamp(),
+              uploadedBy: userData.id
+            }
+          },
+          combinedImageUrl,
+          extractedCustomerData: extractedData,
+          createdAt: serverTimestamp(),
+          createdBy: userData.id,
+          lastUpdated: serverTimestamp(),
+          notes: data.notes || ''
+        }
+
+        await addDoc(collection(db, 'document_tracking'), documentTracking)
+        console.log('✅ Document tracking created successfully')
+      } catch (docError) {
+        console.error('Error creating document tracking:', docError)
+        // لا نوقف العملية إذا فشل إنشاء تتبع الوثائق
+      }
+
+      toast.success('تم إنشاء فاتورة البيع وتتبع الوثائق بنجاح!')
       reset()
       setSelectedItem(null)
-      await loadInventoryItems()
+      setSelectedWarehouse('')
+      setSearchTerm('')
+      setExtractedData({})
       
     } catch (error) {
       console.error('Error creating sale:', error)
-      toast.error('حدث خطأ أثناء إنشاء فاتورة البيع')
+      toast.error('فشل في إنشاء فاتورة البيع')
     } finally {
       setSubmitting(false)
     }
@@ -262,6 +426,22 @@ export function CompanySalesPage() {
 
   if (!userData) {
     return <LoadingSpinner text="جاري تحميل بيانات المستخدم..." />
+  }
+
+  // عرض واجهة الكاميرا
+  if (ocrStep !== 'none') {
+    return (
+      <div className="max-w-4xl mx-auto py-6">
+        <ImprovedCameraOCR
+          title="تصوير بطاقة الهوية"
+          placeholder="بيانات بطاقة الهوية"
+          extractionType="general"
+          onTextExtracted={handleIdCardOCR}
+          onCancel={handleCancelOCR}
+          className="w-full max-w-2xl mx-auto"
+        />
+      </div>
+    )
   }
 
   if (!isCompanyEmployee && userData.role !== 'super_admin') {
@@ -412,6 +592,68 @@ export function CompanySalesPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              {/* تصوير بطاقة الهوية */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <CreditCard className="h-4 w-4" />
+                  صورة بطاقة الهوية *
+                </Label>
+                {idCardImage ? (
+                  <div className="space-y-3">
+                    <div className="relative">
+                      <img 
+                        src={idCardImage} 
+                        alt="ID Card" 
+                        className="w-full h-48 object-cover rounded-lg border"
+                      />
+                      <div className="absolute top-2 right-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => setOcrStep('id-card')}
+                        >
+                          <Camera className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full h-32 flex-col gap-2"
+                    onClick={() => setOcrStep('id-card')}
+                  >
+                    <Camera className="h-8 w-8" />
+                    <span>تصوير بطاقة الهوية</span>
+                    <span className="text-xs text-gray-500">سيتم استخراج البيانات تلقائياً</span>
+                  </Button>
+                )}
+                
+                {!idCardImage && (
+                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-sm text-yellow-800 arabic-text">
+                      <strong>مطلوب:</strong> يجب تصوير بطاقة الهوية قبل المتابعة
+                    </p>
+                  </div>
+                )}
+
+                {/* عرض البيانات المستخرجة الإضافية */}
+                {(extractedData.birthDate || extractedData.gender) && (
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <h4 className="text-sm font-medium text-green-900 mb-2 arabic-text">بيانات إضافية من بطاقة الهوية:</h4>
+                    <div className="space-y-1 text-sm text-green-800">
+                      {extractedData.birthDate && (
+                        <p>تاريخ الميلاد: {extractedData.birthDate}</p>
+                      )}
+                      {extractedData.gender && (
+                        <p>النوع: {extractedData.gender}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="customerName" required>اسم العميل</Label>
                 <Input

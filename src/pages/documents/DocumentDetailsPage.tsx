@@ -379,7 +379,19 @@ export function DocumentDetailsPage() {
 
   // For now, we'll use a simple logic based on creation date
   // In a real implementation, you might add estimatedCompletionDate to the DocumentTracking type
-  const createdDate = document.createdAt?.toDate()
+  let createdDate: Date | undefined
+  try {
+    if (document.createdAt && typeof document.createdAt.toDate === 'function') {
+      createdDate = document.createdAt.toDate()
+    } else if (document.createdAt instanceof Date) {
+      createdDate = document.createdAt
+    } else if (document.createdAt) {
+      createdDate = new Date(document.createdAt as any)
+    }
+  } catch (error) {
+    console.warn('Error parsing document creation date:', error)
+  }
+  
   const estimatedDue = createdDate ? new Date(createdDate.getTime() + (14 * 24 * 60 * 60 * 1000)) : new Date() // 14 days from creation
   
   const isOverdue = document.status !== 'completed' && new Date() > estimatedDue
@@ -452,11 +464,19 @@ export function DocumentDetailsPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <p className="text-sm text-gray-600 arabic-text mb-1">تاريخ الإنشاء</p>
-              <p className="font-medium">{formatDate(document.createdAt?.toDate())}</p>
+              <p className="font-medium">{formatDate(createdDate)}</p>
             </div>
             <div>
               <p className="text-sm text-gray-600 arabic-text mb-1">آخر تحديث</p>
-              <p className="font-medium">{formatDate(document.updatedAt?.toDate())}</p>
+              <p className="font-medium">{formatDate(
+                document.updatedAt && typeof document.updatedAt.toDate === 'function' 
+                  ? document.updatedAt.toDate() 
+                  : document.updatedAt instanceof Date 
+                    ? document.updatedAt 
+                    : document.updatedAt 
+                      ? new Date(document.updatedAt as any)
+                      : undefined
+              )}</p>
             </div>
             {document.status === 'completed' && (
               <div>
@@ -618,7 +638,7 @@ export function DocumentDetailsPage() {
                 motorFingerprintImage={(document as any).motorFingerprintImageUrl}
                 chassisNumberImage={(document as any).chassisNumberImageUrl}
                 customerName={document.customerName || 'عميل'}
-                saleDate={document.createdAt instanceof Date ? document.createdAt : document.createdAt.toDate()}
+                saleDate={createdDate || new Date()}
                 showRegenerateButton={false}
               />
             </div>

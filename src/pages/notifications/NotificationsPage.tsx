@@ -131,7 +131,16 @@ export const NotificationsPage: React.FC = () => {
       }
 
       filtered = filtered.filter(notification => {
-        const notificationDate = notification.createdAt.toDate()
+        let notificationDate: Date
+        if (notification.createdAt && typeof notification.createdAt.toDate === 'function') {
+          notificationDate = notification.createdAt.toDate()
+        } else if (notification.createdAt instanceof Date) {
+          notificationDate = notification.createdAt
+        } else if (notification.createdAt) {
+          notificationDate = new Date(notification.createdAt as any)
+        } else {
+          notificationDate = new Date()
+        }
         return notificationDate >= startDate
       })
     }
@@ -448,7 +457,13 @@ export const NotificationsPage: React.FC = () => {
                                 <div className="flex items-center gap-4 text-xs text-gray-500">
                                   <div className="flex items-center gap-1">
                                     <Calendar className="h-3 w-3" />
-                                    {formatTimeAgo(notification.createdAt.toDate())}
+                                    {formatTimeAgo(
+                                      notification.createdAt && typeof notification.createdAt.toDate === 'function' 
+                                        ? notification.createdAt.toDate() 
+                                        : notification.createdAt instanceof Date 
+                                          ? notification.createdAt 
+                                          : new Date(notification.createdAt as any)
+                                    )}
                                   </div>
                                   <Badge variant="outline" className="text-xs">
                                     {getTypeLabel(notification.type)}

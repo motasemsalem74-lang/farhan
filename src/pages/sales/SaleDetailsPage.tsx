@@ -530,10 +530,10 @@ export default function SaleDetailsPage() {
                       {/* Combined Image */}
                       <CompositeImageDisplay
                         compositeImageUrl={doc.combinedImageUrl}
-                        customerIdImage={sale.details.customer?.idCardFrontImageUrl}
-                        motorFingerprintImage={(sale.items[0] as any)?.motorFingerprintImageUrl}
-                        chassisNumberImage={(sale.items[0] as any)?.chassisNumberImageUrl}
-                        customerName={sale.details.customer?.name || 'عميل'}
+                        customerIdImage={(doc as any).documents?.idCard?.imageUrl || sale.details.customer?.idCardFrontImageUrl}
+                        motorFingerprintImage={(doc as any).documents?.motorFingerprint?.imageUrl || (sale.items[0] as any)?.motorFingerprintImageUrl}
+                        chassisNumberImage={(doc as any).documents?.chassisNumber?.imageUrl || (sale.items[0] as any)?.chassisNumberImageUrl}
+                        customerName={doc.customerName || sale.details.customer?.name || 'عميل'}
                         saleDate={sale.date?.toDate ? sale.date.toDate() : (sale.date instanceof Date ? sale.date : new Date())}
                         showRegenerateButton={false}
                       />

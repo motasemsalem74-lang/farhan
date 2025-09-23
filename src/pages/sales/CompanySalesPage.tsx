@@ -35,7 +35,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { useUserData } from '@/hooks/useUserData'
 import { canOnlySellFromCompany, canViewProfits } from '@/lib/permissions'
 import { SimpleNotificationSystem } from '@/lib/simpleNotifications'
-import { generateTransactionId } from '@/lib/utils'
+import { generateTransactionId, formatCurrency } from '@/lib/utils'
 import { InventoryItem, Warehouse } from '@/types'
 import { ImprovedCameraOCR } from '@/components/ui/ImprovedCameraOCR'
 import { uploadToCloudinary, validateImageFile, compressImage } from '@/lib/cloudinary'
@@ -447,7 +447,13 @@ export function CompanySalesPage() {
           model: selectedItem.model,
           salePrice: data.salePrice || selectedItem.salePrice || selectedItem.purchasePrice,
           warehouseId: selectedWarehouse,
-          status: 'pending_documents',
+          saleTransactionId: transactionId,
+          motorBrand: selectedItem.brand,
+          motorModel: selectedItem.model,
+          purchasePrice: selectedItem.purchasePrice,
+          profit: (data.salePrice || selectedItem.salePrice || selectedItem.purchasePrice) - selectedItem.purchasePrice,
+          saleType: 'company_sale',
+          status: 'pending_submission',
           // الحقول المباشرة للتوافق مع البيع بالنيابة
           idCardFrontImageUrl: idCardImageUrl,
           idCardBackImageUrl: null,
@@ -477,8 +483,15 @@ export function CompanySalesPage() {
           },
           combinedImageUrl,
           extractedCustomerData: extractedData,
+          stages: [{
+            status: 'pending_submission',
+            date: serverTimestamp(),
+            updatedBy: userData.id,
+            notes: `بيع شركة - المبلغ: ${formatCurrency(data.salePrice || selectedItem.salePrice || selectedItem.purchasePrice)} - الربح: ${formatCurrency((data.salePrice || selectedItem.salePrice || selectedItem.purchasePrice) - selectedItem.purchasePrice)}`
+          }],
           createdAt: serverTimestamp(),
           createdBy: userData.id,
+          updatedAt: serverTimestamp(),
           lastUpdated: serverTimestamp(),
           notes: data.notes || ''
         }

@@ -270,9 +270,9 @@ async function extractWithPatternMatching(imageDataUrl: string): Promise<OCRResu
 }
 
 /**
- * Enhanced Egyptian ID card parsing with trained patterns
+ * Enhanced Egyptian ID card parsing with improved patterns
  */
-function parseEgyptianIdCardEnhanced(text: any): {
+export function parseEgyptianIdCardEnhanced(text: any): {
   name?: string
   nationalId?: string
   address?: string
@@ -280,116 +280,89 @@ function parseEgyptianIdCardEnhanced(text: any): {
   birthDate?: string
   gender?: string
 } {
-  console.log('📋 Parsing Egyptian ID card text:', text)
+  console.log('🆔 Parsing Egyptian ID card text:', text)
   
-  // تأكد من أن text هو string
   const textString = typeof text === 'string' ? text : (text?.text || String(text) || '')
-  
   const lines = textString.split('\n').map((line: string) => line.trim()).filter((line: string) => line.length > 0)
   
-  let name = ''
-  let nationalId = ''
-  let address = ''
-  let phone = ''
-  let birthDate = ''
-  let gender = ''
-  
-  // Enhanced patterns for Egyptian ID cards
-  const nationalIdPattern = /\b\d{14}\b/g
-  const phonePattern = /\b01[0-9]{9}\b/g
-  // const datePattern = /\b\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}\b/g // Reserved for future use
-  
-  // Extract national ID (14 digits)
-  const allText = lines.join(' ')
-  const idMatches = allText.match(nationalIdPattern)
-  if (idMatches) {
-    nationalId = idMatches[0]
-    
-    // Extract birth date and gender from national ID
-    if (nationalId.length === 14) {
-      // Birth date is in positions 1-6 (YYMMDD)
-      const year = nationalId.substring(1, 3)
-      const month = nationalId.substring(3, 5)
-      const day = nationalId.substring(5, 7)
-      
-      // Determine century (if year > 30, assume 19xx, else 20xx)
-      const fullYear = parseInt(year) > 30 ? `19${year}` : `20${year}`
-      birthDate = `${day}/${month}/${fullYear}`
-      
-      // Gender from 13th digit (odd = male, even = female)
-      const genderDigit = parseInt(nationalId.substring(12, 13))
-      gender = genderDigit % 2 === 1 ? 'ذكر' : 'أنثى'
-    }
+  const result = {
+    name: '',
+    nationalId: '',
+    address: '',
+    phone: '',
+    birthDate: '',
+    gender: ''
   }
-  
-  // Extract phone number
-  const phoneMatches = allText.match(phonePattern)
-  if (phoneMatches) {
-    phone = phoneMatches[0]
-  }
-  
-  // Enhanced name extraction
-  const arabicLines = lines.filter((line: string) => /[\u0600-\u06FF]/.test(line))
-  
-  // Common Arabic name patterns
-  const namePatterns = [
-    /[\u0600-\u06FF\s]{10,50}/, // Arabic text 10-50 characters
-    /^[\u0600-\u06FF\s]+$/ // Pure Arabic text
+
+  // تحسين استخراج الرقم القومي بأنماط متعددة
+  const nationalIdPatterns = [
+    /\b\d{14}\b/g,                    // 14 رقم متتالي
+    /(?:IQ|ID)\s*:?\s*(\d{10,15})/gi, // مسبوق بكلمة تعريف
+    /\d{10,15}/g                      // أي رقم من 10-15 خانة
   ]
-  
-  for (const line of arabicLines) {
-    for (const pattern of namePatterns) {
-      if (pattern.test(line) && line.length > 5 && line.length < 50) {
-        // Skip lines that contain numbers (likely not names)
-        if (!/\d/.test(line)) {
-          name = line
+
+  // البحث في النص الكامل أولاً
+  const fullText = lines.join(' ')
+  for (const pattern of nationalIdPatterns) {
+    const matches = fullText.match(pattern)
+    if (matches) {
+      for (const match of matches) {
+        const cleanId = match.replace(/[^\d]/g, '')
+        if (cleanId.length >= 10 && cleanId.length <= 15) {
+          result.nationalId = cleanId.length === 14 ? cleanId : cleanId.padStart(14, '0')
+          console.log('✅ Found national ID:', result.nationalId)
           break
         }
       }
+      if (result.nationalId) break
     }
-    if (name) break
   }
-  
-  // Enhanced address extraction
-  const addressLines = arabicLines.filter((line: string) => 
-    line !== name && 
-    line.length > 5 && 
-    /[\u0600-\u06FF]/.test(line)
-  )
-  
-  // Egyptian governorates for address validation
-  const egyptianGovernorates = [
-    'القاهرة', 'الجيزة', 'الإسكندرية', 'الدقهلية', 'البحيرة', 'الفيوم', 'الغربية', 
-    'الإسماعيلية', 'المنوفية', 'المنيا', 'القليوبية', 'الوادي الجديد', 'السويس',
-    'أسوان', 'أسيوط', 'بني سويف', 'بورسعيد', 'دمياط', 'الشرقية', 'جنوب سيناء',
-    'كفر الشيخ', 'مطروح', 'الأقصر', 'قنا', 'شمال سيناء', 'سوهاج', 'البحر الأحمر'
-  ]
-  
-  // Find address lines that contain governorate names
-  const addressWithGovernorate = addressLines.find((line: string) =>
-    egyptianGovernorates.some((gov: string) => line.includes(gov))
-  )
-  
-  if (addressWithGovernorate) {
-    address = addressWithGovernorate
-  } else if (addressLines.length > 0) {
-    address = addressLines.join(' - ')
+
+  // تحسين استخراج الاسم
+  for (const line of lines) {
+    // تنظيف السطر من الرموز الغريبة
+    const cleanLine = line.replace(/[^\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\s\w]/g, ' ')
+    const arabicMatch = cleanLine.match(/[أ-ي\s]{8,50}/)
+    if (arabicMatch) {
+      result.name = arabicMatch[0].trim()
+      console.log('✅ Found name:', result.name)
+      break
+    }
   }
-  
-  // Clean extracted data
-  name = name.replace(/[^\u0600-\u06FF\s]/g, '').trim()
-  address = address.replace(/[^\u0600-\u06FF\s\-]/g, '').trim()
-  
-  console.log('✅ Parsed ID card data:', { name, nationalId, address, phone, birthDate, gender })
-  
-  return {
-    name: name || 'غير محدد',
-    nationalId: nationalId || '',
-    address: address || 'غير محدد',
-    phone: phone || undefined,
-    birthDate: birthDate || undefined,
-    gender: gender || undefined
+
+  // استخراج تاريخ الميلاد من الرقم القومي
+  if (result.nationalId && result.nationalId.length === 14) {
+    try {
+      const century = result.nationalId[0] === '2' || result.nationalId[0] === '3' ? '20' : '19'
+      const year = century + result.nationalId.substring(1, 3)
+      const month = result.nationalId.substring(3, 5)
+      const day = result.nationalId.substring(5, 7)
+      
+      if (parseInt(month) >= 1 && parseInt(month) <= 12 && parseInt(day) >= 1 && parseInt(day) <= 31) {
+        result.birthDate = `${day}/${month}/${year}`
+        console.log('✅ Extracted birth date from ID:', result.birthDate)
+      }
+    } catch (error) {
+      console.log('❌ Could not extract birth date from ID')
+    }
   }
+
+  // استخراج النوع من الرقم القومي
+  if (result.nationalId && result.nationalId.length === 14) {
+    const genderDigit = parseInt(result.nationalId[12])
+    result.gender = genderDigit % 2 === 0 ? 'أنثى' : 'ذكر'
+    console.log('✅ Extracted gender from ID:', result.gender)
+  }
+
+  // استخراج رقم الهاتف
+  const phoneMatches = fullText.match(/\b01[0-9]{9}\b/g)
+  if (phoneMatches) {
+    result.phone = phoneMatches[0]
+    console.log('✅ Found phone:', result.phone)
+  }
+
+  console.log('✅ Final parsed ID card data:', result)
+  return result
 }
 
 /**
@@ -436,6 +409,7 @@ function parseMotorFingerprintEnhanced(text: string): string {
   console.log('❌ No valid motor fingerprint found')
   return cleanText
 }
+
 
 /**
  * Enhanced chassis number parsing

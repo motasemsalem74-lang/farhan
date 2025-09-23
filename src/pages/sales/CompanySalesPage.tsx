@@ -40,7 +40,7 @@ import { InventoryItem, Warehouse } from '@/types'
 import { ImprovedCameraOCR } from '@/components/ui/ImprovedCameraOCR'
 import { uploadToCloudinary, validateImageFile, compressImage } from '@/lib/cloudinary'
 import { createCompositeImage } from '@/lib/imageComposer'
-import { extractEgyptianIdCardEnhanced } from '@/lib/enhancedOCR'
+import { extractEgyptianIdCardEnhanced, parseEgyptianIdCardEnhanced } from '@/lib/enhancedOCR'
 
 interface SaleFormData {
   customerName: string
@@ -217,6 +217,7 @@ export function CompanySalesPage() {
     try {
       setValue('idCardImage', imageUrl)
       
+      // استخدام الدالة المحسنة لاستخراج البيانات
       const ocrResult = await extractEgyptianIdCardEnhanced(imageUrl)
       
       if (ocrResult.success && ocrResult.extractedData) {
@@ -238,7 +239,6 @@ export function CompanySalesPage() {
           setValue('customerPhone', data.phone)
           setExtractedData(prev => ({ ...prev, phone: data.phone }))
         }
-        
         if (data.birthDate) {
           setExtractedData(prev => ({ ...prev, birthDate: data.birthDate }))
         }
@@ -248,17 +248,33 @@ export function CompanySalesPage() {
         
         toast.success('تم استخراج بيانات بطاقة الهوية بنجاح')
       } else {
-        const lines = text.split('\n').map(line => line.trim()).filter(line => line)
+        // Fallback parsing للنص المستخرج مباشرة
+        const parsedData = parseEgyptianIdCardEnhanced(text)
         
-        for (const line of lines) {
-          const nationalIdMatch = line.match(/\d{14}/)
-          if (nationalIdMatch) {
-            setValue('customerNationalId', nationalIdMatch[0])
-            break
-          }
+        if (parsedData.nationalId) {
+          setValue('customerNationalId', parsedData.nationalId)
+          setExtractedData(prev => ({ ...prev, nationalId: parsedData.nationalId }))
+        }
+        if (parsedData.name) {
+          setValue('customerName', parsedData.name)
+          setExtractedData(prev => ({ ...prev, name: parsedData.name }))
+        }
+        if (parsedData.address) {
+          setValue('customerAddress', parsedData.address)
+          setExtractedData(prev => ({ ...prev, address: parsedData.address }))
+        }
+        if (parsedData.phone) {
+          setValue('customerPhone', parsedData.phone)
+          setExtractedData(prev => ({ ...prev, phone: parsedData.phone }))
+        }
+        if (parsedData.birthDate) {
+          setExtractedData(prev => ({ ...prev, birthDate: parsedData.birthDate }))
+        }
+        if (parsedData.gender) {
+          setExtractedData(prev => ({ ...prev, gender: parsedData.gender }))
         }
         
-        toast.info('تم تصوير بطاقة الهوية - يرجى مراجعة البيانات المستخرجة')
+        toast.info('تم تصوير بطاقة الهوية - يرجى مراجعة البيانات')
       }
     } catch (error) {
       console.error('Error processing ID card:', error)

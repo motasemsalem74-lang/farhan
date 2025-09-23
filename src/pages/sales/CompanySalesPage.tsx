@@ -408,9 +408,9 @@ export function CompanySalesPage() {
         let combinedImageUrl = ''
         
         // إنشاء صورة مركبة للوثائق
-        if (idCardImageUrl) {
-          combinedImageUrl = idCardImageUrl // استخدام الصورة مباشرة للآن
-        }
+        // للآن، سنستخدم صورة بطاقة الهوية كصورة مجمعة
+        // يمكن تطوير هذا لاحقاً لإنشاء صورة مركبة حقيقية
+        combinedImageUrl = idCardImageUrl
 
         const documentTracking = {
           transactionId,
@@ -433,6 +433,18 @@ export function CompanySalesPage() {
               status: 'uploaded',
               uploadedAt: serverTimestamp(),
               uploadedBy: userData.id
+            },
+            motorFingerprint: {
+              imageUrl: selectedItem.motorFingerprintImageUrl || null,
+              status: selectedItem.motorFingerprintImageUrl ? 'uploaded' : 'missing',
+              uploadedAt: selectedItem.motorFingerprintImageUrl ? serverTimestamp() : null,
+              uploadedBy: selectedItem.motorFingerprintImageUrl ? userData.id : null
+            },
+            chassisNumber: {
+              imageUrl: selectedItem.chassisNumberImageUrl || null,
+              status: selectedItem.chassisNumberImageUrl ? 'uploaded' : 'missing',
+              uploadedAt: selectedItem.chassisNumberImageUrl ? serverTimestamp() : null,
+              uploadedBy: selectedItem.chassisNumberImageUrl ? userData.id : null
             }
           },
           combinedImageUrl,

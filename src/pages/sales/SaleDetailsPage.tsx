@@ -138,8 +138,8 @@ export default function SaleDetailsPage() {
           salePrice: Number(saleData.salePrice) || 0,
           agentCommissionPercentage: Number(saleData.agentCommissionPercentage) || 0,
           ...(saleData.purchasePrice && { purchasePrice: Number(saleData.purchasePrice) }),
-          motorFingerprintImageUrl: saleData.motorFingerprintImageUrl || null,
-          chassisNumberImageUrl: saleData.chassisNumberImageUrl || null
+          motorFingerprintImageUrl: saleData.motorFingerprintImageUrl || saleData.documents?.motorFingerprint?.imageUrl || null,
+          chassisNumberImageUrl: saleData.chassisNumberImageUrl || saleData.documents?.chassisNumber?.imageUrl || null
         } as any],
         totalAmount: Number(saleData.salePrice) || 0,
         fromWarehouseId: saleData.fromWarehouseId || '',
@@ -149,7 +149,7 @@ export default function SaleDetailsPage() {
             phone: saleData.customerPhone || '',
             address: saleData.customerAddress || '',
             nationalId: saleData.customerNationalId || '',
-            idCardFrontImageUrl: saleData.idCardImageUrl || saleData.customerIdImageUrl || saleData.customerIdImage || null,
+            idCardFrontImageUrl: saleData.idCardImageUrl || saleData.customerIdImageUrl || saleData.customerIdImage || saleData.documents?.idCard?.imageUrl || null,
             idCardBackImageUrl: saleData.idCardBackImageUrl || null,
             idIssuanceDate: saleData.customerIdIssuanceDate || null,
             idExpiryDate: saleData.customerIdExpiryDate || null

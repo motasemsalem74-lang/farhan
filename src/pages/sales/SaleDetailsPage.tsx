@@ -113,8 +113,10 @@ export default function SaleDetailsPage() {
       // Safely handle date conversion
       let saleDate = new Date()
       try {
-        if (saleData.createdAt?.toDate) {
+        if (saleData.createdAt && typeof saleData.createdAt.toDate === 'function') {
           saleDate = saleData.createdAt.toDate()
+        } else if (saleData.createdAt && saleData.createdAt instanceof Date) {
+          saleDate = saleData.createdAt
         } else if (saleData.createdAt) {
           saleDate = new Date(saleData.createdAt)
         }
@@ -191,14 +193,18 @@ export default function SaleDetailsPage() {
         let updatedDate = new Date()
         
         try {
-          if (docData.createdAt?.toDate) {
+          if (docData.createdAt && typeof docData.createdAt.toDate === 'function') {
             createdDate = docData.createdAt.toDate()
+          } else if (docData.createdAt && docData.createdAt instanceof Date) {
+            createdDate = docData.createdAt
           } else if (docData.createdAt) {
             createdDate = new Date(docData.createdAt)
           }
           
-          if (docData.updatedAt?.toDate) {
+          if (docData.updatedAt && typeof docData.updatedAt.toDate === 'function') {
             updatedDate = docData.updatedAt.toDate()
+          } else if (docData.updatedAt && docData.updatedAt instanceof Date) {
+            updatedDate = docData.updatedAt
           } else if (docData.updatedAt) {
             updatedDate = new Date(docData.updatedAt)
           } else {

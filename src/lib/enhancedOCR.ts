@@ -303,11 +303,15 @@ export function parseEgyptianIdCardEnhanced(text: any): {
 
   // البحث في النص الكامل أولاً
   const fullText = lines.join(' ')
+  console.log('🔍 Searching for national ID in text:', fullText)
+  
   for (const pattern of nationalIdPatterns) {
     const matches = fullText.match(pattern)
     if (matches) {
+      console.log('🎯 Pattern matches found:', matches)
       for (const match of matches) {
         const cleanId = match.replace(/[^\d]/g, '')
+        console.log('🧹 Cleaned ID candidate:', cleanId)
         if (cleanId.length >= 10 && cleanId.length <= 15) {
           result.nationalId = cleanId.length === 14 ? cleanId : cleanId.padStart(14, '0')
           console.log('✅ Found national ID:', result.nationalId)
@@ -315,6 +319,24 @@ export function parseEgyptianIdCardEnhanced(text: any): {
         }
       }
       if (result.nationalId) break
+    }
+  }
+  
+  // إذا لم نجد رقم قومي، جرب البحث في كل سطر منفصل
+  if (!result.nationalId) {
+    console.log('🔄 Trying line-by-line search...')
+    for (const line of lines) {
+      const numbers = line.match(/\d+/g)
+      if (numbers) {
+        for (const num of numbers) {
+          if (num.length >= 10 && num.length <= 15) {
+            result.nationalId = num.length === 14 ? num : num.padStart(14, '0')
+            console.log('✅ Found national ID in line:', result.nationalId)
+            break
+          }
+        }
+        if (result.nationalId) break
+      }
     }
   }
 
@@ -417,26 +439,51 @@ function parseMotorFingerprintEnhanced(text: string): string {
 function parseChassisNumberEnhanced(text: string): string {
   console.log('🚗 Parsing chassis number:', text)
   
-  // VIN (Vehicle Identification Number) patterns
+  // First, try to find standard VIN patterns in the original text
   const vinPatterns = [
     /[A-HJ-NPR-Z0-9]{17}/g, // Standard 17-character VIN (excludes I, O, Q)
     /[A-Z0-9]{17}/g, // 17-character alphanumeric
-    /[A-Z0-9]{10,20}/g // General pattern for non-standard chassis numbers
+    /[A-Z0-9]{15,20}/g // Extended range for non-standard chassis numbers
   ]
   
-  // Clean text
+  // Try to find VIN in original text first (before cleaning)
+  const originalUpper = text.toUpperCase()
+  for (const pattern of vinPatterns) {
+    const matches = originalUpper.match(pattern)
+    if (matches) {
+      console.log('🎯 Found potential VINs in original text:', matches)
+      // Filter out common false positives
+      const validMatches = matches.filter(match => {
+        // Exclude matches that are mostly numbers or mostly letters
+        const letterCount = (match.match(/[A-Z]/g) || []).length
+        const numberCount = (match.match(/[0-9]/g) || []).length
+        return letterCount >= 3 && numberCount >= 3 && match.length >= 15
+      })
+      
+      if (validMatches.length > 0) {
+        const bestMatch = validMatches.sort((a, b) => b.length - a.length)[0]
+        console.log('✅ Found VIN chassis number:', bestMatch)
+        return bestMatch
+      }
+    }
+  }
+  
+  // Clean text and try again
   let cleanText = text
     .replace(/[^A-Z0-9]/g, '')
     .toUpperCase()
   
-  // Try VIN patterns first
+  console.log('🧹 Cleaned text:', cleanText)
+  
+  // Try VIN patterns on cleaned text
   for (const pattern of vinPatterns) {
     const matches = cleanText.match(pattern)
     if (matches) {
+      console.log('🎯 Found matches in cleaned text:', matches)
       // Prefer 17-character matches (standard VIN)
       const vinMatch = matches.find(match => match.length === 17)
       if (vinMatch) {
-        console.log('✅ Found VIN chassis number:', vinMatch)
+        console.log('✅ Found standard VIN chassis number:', vinMatch)
         return vinMatch
       }
       

@@ -228,6 +228,13 @@ export function CompanySalesPage() {
       console.log('📷 Processing ID card image URL:', imageUrl.substring(0, 50) + '...')
       console.log('📋 Processing extracted text:', text)
       
+      // التأكد من أن imageUrl هو رابط صورة وليس نص
+      if (!imageUrl.startsWith('data:image/') && !imageUrl.startsWith('http')) {
+        console.error('❌ Invalid image URL format:', imageUrl)
+        toast.error('خطأ في تنسيق الصورة')
+        return
+      }
+      
       // حفظ الصورة في الـ form state (التأكد من حفظ الرابط وليس النص)
       setValue('idCardImage', imageUrl)
       
@@ -471,7 +478,7 @@ export function CompanySalesPage() {
           title="تصوير بطاقة الهوية"
           placeholder="بيانات بطاقة الهوية"
           extractionType="general"
-          onTextExtracted={handleIdCardOCR}
+          onTextExtracted={(text: string, imageUrl: string, extractedData?: any) => handleIdCardOCR(imageUrl, text)}
           onCancel={handleCancelOCR}
           className="w-full max-w-2xl mx-auto"
         />

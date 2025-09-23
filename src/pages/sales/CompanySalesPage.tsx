@@ -55,6 +55,7 @@ export function CompanySalesPage() {
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [loading, setLoading] = useState(true)
+  const [loadingItems, setLoadingItems] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm<SaleFormData>()
@@ -308,18 +309,34 @@ export function CompanySalesPage() {
             {/* اختيار المخزن */}
             <div className="space-y-2">
               <Label>المخزن</Label>
-              <select
-                value={selectedWarehouse}
-                onChange={(e) => setSelectedWarehouse(e.target.value)}
-                className="form-input w-full"
-              >
-                <option value="">اختر المخزن</option>
-                {warehouses.map(warehouse => (
-                  <option key={warehouse.id} value={warehouse.id}>
-                    {warehouse.name}
-                  </option>
-                ))}
-              </select>
+              {loading ? (
+                <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500 arabic-text">
+                  جاري تحميل المخازن...
+                </div>
+              ) : (
+                <select
+                  value={selectedWarehouse}
+                  onChange={(e) => setSelectedWarehouse(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 arabic-text"
+                >
+                  <option value="">اختر المخزن</option>
+                  {warehouses.map(warehouse => (
+                    <option key={warehouse.id} value={warehouse.id}>
+                      {warehouse.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+              
+              {/* معلومات تشخيصية */}
+              {!loading && (
+                <div className="text-xs text-gray-500 arabic-text">
+                  {warehouses.length === 0 
+                    ? "⚠️ لا توجد مخازن متاحة" 
+                    : `✅ تم العثور على ${warehouses.length} مخزن`
+                  }
+                </div>
+              )}
             </div>
 
             {/* البحث */}
